@@ -1,0 +1,195 @@
+<? 
+    $template_path = base_url().$this->config->item('template_path');  
+?> 
+
+    <input type="hidden" id="txt_dbPeriode">
+    <div class="column_3">
+        <div class="portlet">
+            <div class="portlet-header">Data Produksi</div>
+            <div class="portlet-content">
+                <?php
+                    echo $graph_produksi ;     
+                ?>   
+            </div>
+        </div>
+    </div>
+
+    <div class="column">
+
+        <div class="portlet">
+            <div class="portlet-header">Data Tangki-1</div>
+            <div class="portlet-content">
+                <?php
+                    echo $graph_tangki_1 ;     
+                ?>    
+            </div>
+        </div>
+    </div>
+
+    <div class="column_2">
+        <div class="portlet">
+            <div class="portlet-header">Data Tangki-2</div>
+            <div class="portlet-content">
+                <?php
+                    echo $graph_tangki_2 ;     
+                ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="columns">
+        <div class="portlet">
+            <div class="portlet-header">Data Penjualan</div>
+            <div class="portlet-content">
+                <?php
+                    echo $graph_despatch ;     
+                ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="column-reminder">
+        <div class="portlet">
+            <div class="portlet-header">Reminder</div>
+            <div class="portlet-content">
+                <div id="tabs">
+                    <ul class="tabs">
+                        <li><a href="#fragment-1"><span>Unmatch NAB</span></a></li>
+                        <li><a href="#fragment-2"><span>last Import</span></a></li>
+                        <!--<li><a href="#fragment-3"><span>History</span></a></li> -->
+                    </ul>
+                    <div id="fragment-1" class="panes">
+                        <div id="gridUnmatch">
+                            <table id="list_unmatchnab" class="scroll"></table> 
+                            <div id="pager_unmatchnab" class="scroll" style="text-align:center;"></div>
+                        </div>      
+                    </div>
+                    <div id="fragment-2">
+                        
+                    </div>
+                    <div id="fragment-3">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+
+<script type="text/javascript">
+var url = "<?= base_url().'index.php/' ?>";  
+var jGrid = null;
+var colNamesT = new Array();
+var colModelT = new Array();
+
+var gridimgpath = '<?= $template_path ?>themes/basic/images';
+   
+//var gridimgpath = 'http://localhost/vehicle/resources/jqGrid/themes/basic/images';   
+colNamesT.push('no');
+colModelT.push({name:'no',index:'no', sortable:false, resizable:true, editable: false,hidden:true, width: 30, align:'center'});
+
+colNamesT.push('ID_NT_AB');
+colModelT.push({name:'ID_NT_AB',index:'ID_NT_AB', editable: false, hidden:true, width: 140, align:'left'});
+
+colNamesT.push('No SPB');
+colModelT.push({name:'NO_SPB',index:'NO_SPB', editable: false, hidden:false, width: 100, align:'left'});
+
+colNamesT.push('Tanggal');
+colModelT.push({name:'TANGGAL',index:'TANGGAL', editable: false, hidden:false, width: 75, align:'center',formatter:'date'});
+
+colNamesT.push('');
+colModelT.push({name:'act',index:'act', editable: false, hidden:false, width: 75, align:'center'}); 
+
+var company_code='<?php echo $company_code;?>';
+var lastsel; var jdesc1;
+var lRow; var lCol; var i = 0;
+var loadView = function()
+        {
+        jGrid_va = jQuery("#list_unmatchnab").jqGrid(
+            {
+                url:url+'c_dashboard/LoadData_UnmatchNAB/', //+get_periode(),
+                mtype : "POST",
+                datatype: "json",
+                colNames: colNamesT ,
+                colModel: colModelT,
+                sortname: colModelT[1].name,
+                pager:jQuery("#pager_unmatchnab"),
+                rowNum: 20,
+                rownumbers: true,
+                height: 225,
+                width: 400,
+                imgpath: gridimgpath,
+                sortorder: "asc",
+                cellEdit: true,
+                cellsubmit: 'clientArray',
+                forceFit : true,
+                onCellSelect : function(iCol){},
+                loadComplete: function(){ 
+                    var ids = jQuery("#list_unmatchnab").getDataIDs();
+                    for(var i=0;i<ids.length;i++)
+                        { 
+                            var cl = ids[i];
+                            //ce = "<a href='#' onclick=\"lihat('"+cl+"');\"/ style='cursor:pointer'>detail</a>";
+                            be = "<img style='padding-right:6px;' src='<?= $template_path ?>themes/base/images/file_edit.png' width='12px' height='13px' onclick=\"edit_restan('"+cl+"');\" />"; 
+                            ce = "<img style='padding-right:6px;' src='<?= $template_path ?>themes/base/images/file_delete.png' width='12px' height='13px' onclick=\"delete_restan('"+cl+"');\"/>";
+                            
+                            //jQuery("#list_unmantchnab").setRowData(ids[i],{act:be+ce}) 
+                        }
+                                            
+                    }
+            });
+            jGrid_va.navGrid('#pager_unmatchnab',{edit:false,del:false,add:false, search: false, refresh: true});
+            
+         }
+jQuery("#list_unmatchnab").ready(loadView); 
+</script>
+
+<script type="text/javascript">
+    $(function() {
+        /*$( ".columns" ).sortable({
+            connectWith: ".columns"
+        });*/
+
+        $( ".portlet" ).addClass( "ui-widget ui-widget-content ui-helper-clearfix ui-corner-all" )
+            .find( ".portlet-header" )
+                .addClass( "ui-widget-header ui-corner-all" )    
+                .prepend( "<span class='ui-icon ui-icon-refresh'></span>")
+                .prepend( "<span class='ui-icon ui-icon-wrench'></span>")
+                .prepend( "<span class='ui-icon ui-icon-minusthick'></span>")
+                .end()
+            .find( ".portlet-content" );
+
+        $( ".portlet-header .ui-icon-minusthick" ).click(function() {
+            $( this ).toggleClass( "ui-icon-minusthick" ).toggleClass( "ui-icon-plusthick" );
+            $( this ).parents( ".portlet:first" ).find( ".portlet-content" ).toggle();
+        });
+        
+        $( ".portlet-header .ui-icon-refresh" ).click(function() {
+            alert('Under Construction!!!');    
+        });
+        
+        $( ".portlet-header .ui-icon-wrench" ).click(function() {
+            alert('Under Construction!!!');
+        });
+
+        $( ".portlet-header .ui-icon-close" ).click(function() {
+            // Remove portlet div
+            $("#"+portlet).remove(); 
+        });
+        
+        $( ".column" ).disableSelection();
+    });
+</script>
+
+<script language="JavaScript" type="text/javascript"> 
+$(document).ready(function() {
+    var $tabs = $('#tabs').tabs();
+    var selected = $tabs.tabs('option', 'selected'); // => 0
+    $("#tabs").tabs();
+    
+    $("#txt_dbPeriode").datepicker({dateFormat:"yy-mm-dd"});
+});
+</script>
+
+

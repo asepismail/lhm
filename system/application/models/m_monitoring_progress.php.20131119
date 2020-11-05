@@ -1,0 +1,103 @@
+<?
+class m_monitoring_progress extends Model{
+
+    function m_monitoring_progress(){
+        parent::Model(); 
+        $this->load->database();
+    }
+    
+    function create_absensi($company, $periode, $last_period){        
+		$query = $this->db->query("SELECT p.LOCATION_CODE, p.COMPANY_CODE,
+GROUP_CONCAT(DATE_FORMAT(p.TGL_PROGRESS, '%e'),':',1 ORDER BY p.TGL_PROGRESS SEPARATOR ',') AS ABSEN,
+max_p.MAX_TGL_PROGRESS, fieldcrop.YEARREPLANT
+FROM
+(
+	SELECT DISTINCT(pr.TGL_PROGRESS), pr.LOCATION_CODE, pr.COMPANY_CODE FROM hist_p_progress pr
+	WHERE pr.COMPANY_CODE='".$company."'
+	AND pr.ACTIVITY_CODE = '8601003'
+	AND DATE_FORMAT(pr.TGL_PROGRESS,'%Y%m') = '".$periode."'
+	-- AND pr.LOCATION_CODE = 'OJ01408'
+	ORDER BY pr.TGL_PROGRESS
+) p
+LEFT JOIN (
+	SELECT MAX(pr.TGL_PROGRESS) MAX_TGL_PROGRESS, pr.LOCATION_CODE, pr.COMPANY_CODE FROM hist_p_progress pr
+	WHERE pr.COMPANY_CODE='".$company."'
+	AND pr.ACTIVITY_CODE = '8601003'
+	AND DATE_FORMAT(pr.TGL_PROGRESS,'%Y%m') = '".$last_period."'
+	-- AND pr.LOCATION_CODE = 'OJ01408'
+	GROUP BY pr.LOCATION_CODE
+) max_p ON p.LOCATION_CODE = max_p.LOCATION_CODE
+LEFT JOIN (
+	SELECT f.FIELDCODE, f.YEARREPLANT  
+	FROM m_fieldcrop f
+	WHERE f.COMPANY_CODE ='".$company."'
+	AND f.INACTIVE = 0
+) fieldcrop ON p.LOCATION_CODE=fieldcrop.FIELDCODE
+GROUP BY p.LOCATION_CODE");
+		if($query->num_rows()==0){
+			$query = $this->db->query("SELECT p.LOCATION_CODE, p.COMPANY_CODE,
+GROUP_CONCAT(DATE_FORMAT(p.TGL_PROGRESS, '%e'),':',1 ORDER BY p.TGL_PROGRESS SEPARATOR ',') AS ABSEN,
+max_p.MAX_TGL_PROGRESS, fieldcrop.YEARREPLANT
+FROM
+(
+	SELECT DISTINCT(pr.TGL_PROGRESS), pr.LOCATION_CODE, pr.COMPANY_CODE FROM p_progress pr
+	WHERE pr.COMPANY_CODE='".$company."'
+	AND pr.ACTIVITY_CODE = '8601003'
+	AND DATE_FORMAT(pr.TGL_PROGRESS,'%Y%m') = '".$periode."'
+	-- AND pr.LOCATION_CODE = 'OB00407'
+	ORDER BY pr.TGL_PROGRESS
+) p
+LEFT JOIN (
+	SELECT MAX(pr.TGL_PROGRESS) MAX_TGL_PROGRESS, pr.LOCATION_CODE, pr.COMPANY_CODE FROM hist_p_progress pr
+	WHERE pr.COMPANY_CODE='".$company."'
+	AND pr.ACTIVITY_CODE = '8601003'
+	AND DATE_FORMAT(pr.TGL_PROGRESS,'%Y%m') = '".$last_period."'
+	-- AND pr.LOCATION_CODE = 'OB00407'
+	GROUP BY pr.LOCATION_CODE
+) max_p ON p.LOCATION_CODE = max_p.LOCATION_CODE
+LEFT JOIN (
+	SELECT f.FIELDCODE, f.YEARREPLANT  
+	FROM m_fieldcrop f
+	WHERE f.COMPANY_CODE ='".$company."'
+	AND f.INACTIVE = 0
+) fieldcrop ON p.LOCATION_CODE=fieldcrop.FIELDCODE
+GROUP BY p.LOCATION_CODE");	
+		}
+        $temp_result = array();        
+        foreach ( $query->result_array() as $row ){
+            $temp_result [] = $row;            
+        }
+        return $temp_result;    
+    }
+    	
+	function check_max_date($company, $tgl, $location){
+		$tgl = preg_split('/[- :]/',trim($tgl));
+        $tgl = implode('',$tgl);
+		$value=$tgl;
+		for ($i=0; $i<4; $i++){
+			$query = $this->db->query("SELECT pr.TGL_PROGRESS FROM hist_p_progress pr
+	WHERE pr.COMPANY_CODE='".$company."'
+	AND pr.ACTIVITY_CODE = '8601003'
+	AND pr.TGL_PROGRESS= '".$tgl."'
+	AND pr.LOCATION_CODE = '".$location."'");
+			$tgl = $tgl-1;			
+			if($query->num_rows() > 0){
+				$row = $query->row();            
+				$value = $row->TGL_PROGRESS;  
+			}
+		}
+        return $value;    
+    }
+    
+    function cek_hari($tgl,$company){
+        $query = $this->db->query("SELECT * FROM m_calendar WHERE COMPANY_CODE = '".$company."' AND DATE_FORMAT(CAL_TGL,'%Y%m%e') = '".$tgl."'");
+		
+        $temp_result = array();        
+        foreach ( $query->result_array() as $row ){
+            $temp_result [] = $row;            
+        }
+        return $temp_result;
+    }
+    
+}
+?>

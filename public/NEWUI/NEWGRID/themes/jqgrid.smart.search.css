@@ -1,0 +1,42 @@
+/* Smart Filter Bar */
+.smart-search-table {
+    width: auto;
+    min-width: 500px;
+}
+#trans-search-form {
+    background-color: #EEEEEE;
+    border: 1px solid #F9DF78;
+}
+.smart-search-table td {
+    padding:3px;
+}
+.smart-search-label {
+    width:100px;
+    text-align:left;
+}
+.smart-search-oper {
+    width:150px;
+}
+.smart-search-value {
+    width:100%;
+}
+.smart-search-fields {
+    width:300px;
+}
+.smart-search-add-btn, .smart-search-minus-btn, .smart-search-find-btn, .smart-search-reset-btn {
+    cursor:pointer;
+}
+
+.smart-search-table .ui-add-last,
+.smart-search-table .ui-del {
+    width: 16px;
+    float: right;
+}
+
+.ui-dialog-content .smart-search-table.ui-corner-all {
+    -moz-border-radius: none;
+}
+
+.ui-dialog-content .smart-search-table.ui-widget-content {
+    border: none;
+}

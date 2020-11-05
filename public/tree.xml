@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding="utf-8"?>
+<rows>
+
+    <page>1</page>
+    <total>1</total>
+    <records>1</records>
+<row><cell>1</cell><cell>Setup Master Data</cell><cell></cell><cell>0</cell><cell>1</cell><cell>20</cell><cell>false</cell><cell>true</cell></row>
+<row><cell>2</cell><cell>Company</cell><cell>http://localhost/lhm/index.php/m_company</cell><cell>1</cell><cell>2</cell><cell>3</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>3</cell><cell>User</cell><cell>http://localhost/lhm/index.php/m_user</cell><cell>1</cell><cell>4</cell><cell>5</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>4</cell><cell>C O A</cell><cell>http://localhost/lhm/index.php/m_coa</cell><cell>1</cell><cell>6</cell><cell>7</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>5</cell><cell>Blok Tanah</cell><cell>http://localhost/lhm/index.php/m_blockmaster</cell><cell>1</cell><cell>8</cell><cell>9</cell><cell>true</cell><cell>true</cell></row>
+ <row><cell>6</cell><cell>Blok Tanam</cell><cell>http://localhost/lhm/index.php/m_fieldcrop</cell><cell>1</cell><cell>10</cell><cell>11</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>7</cell><cell>Tipe Infrastruktur</cell><cell>http://localhost/lhm/index.php/m_infrastructure_type</cell><cell>1</cell><cell>12</cell><cell>13</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>8</cell><cell>Sub Tipe Infrastruktur</cell><cell>http://localhost/lhm/index.php/m_infrastructure_subtype</cell><cell>1</cell><cell>14</cell><cell>15</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>9</cell><cell>Infrastruktur</cell><cell>http://localhost/lhm/index.php/m_infrastructure</cell><cell>1</cell><cell>16</cell><cell>17</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>10</cell><cell>Bibit</cell><cell>http://localhost/lhm/index.php/m_Nursery</cell><cell>1</cell><cell>18</cell><cell>19</cell><cell>true</cell><cell>true</cell></row>
+
+ <row><cell>11</cell><cell>Activity</cell><cell></cell><cell>0</cell><cell>21</cell><cell>26</cell><cell>false</cell><cell>false</cell></row>
+  <row><cell>12</cell><cell>Project</cell><cell>http://localhost/lhm/index.php/p_project</cell><cell>1</cell><cell>22</cell><cell>23</cell><cell>true</cell><cell>false</cell></row>
+   <row><cell>13</cell><cell>Rutin</cell><cell>http://localhost/lhm/index.php/p_routine</cell><cell>1</cell><cell>24</cell><cell>25</cell><cell>true</cell><cell>false</cell></row>
+   
+   
+ <row><cell>14</cell><cell>Report</cell><cell></cell><cell>0</cell><cell>27</cell><cell>34</cell><cell>false</cell><cell>false</cell></row>
+  <row><cell>15</cell><cell>Performance Progress</cell><cell>jsonex.html</cell><cell>1</cell><cell>28</cell><cell>29</cell><cell>true</cell><cell>true</cell></row>
+  <row><cell>16</cell><cell>Harian Progress Teknik</cell><cell>jsonex.html</cell><cell>1</cell><cell>30</cell><cell>31</cell><cell>true</cell><cell>true</cell></row>
+  <row><cell>17</cell><cell>Laporan Pembibitan</cell><cell>jsonex.html</cell><cell>1</cell><cell>32</cell><cell>33</cell><cell>true</cell><cell>true</cell></row>      
+   
+
+<row><cell>18</cell><cell>Production</cell><cell></cell><cell>0</cell><cell>35</cell><cell>48</cell><cell>false</cell><cell>false</cell></row>
+<row><cell>19</cell><cell>Kebun</cell><cell>http://localhost/lhm/index.php/p_produksi_tbs</cell><cell>1</cell><cell>36</cell><cell>37</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>20</cell><cell>Pabrik / Mill</cell><cell>http://localhost/lhm/index.php/p_produksi_cpo</cell><cell>1</cell><cell>38</cell><cell>39</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>21</cell><cell>Storage</cell><cell>http://localhost/lhm/index.php/p_produksi_storage</cell><cell>1</cell><cell>40</cell><cell>41</cell><cell>true</cell><cell>true</cell></row>
+<row><cell>22</cell><cell>Dispatch</cell><cell>http://localhost/lhm/index.php/p_produksi_dispatch</cell><cell>1</cell><cell>42</cell><cell>43</cell><cell>true</cell><cell>true</cell></row>
+
+<row><cell>23</cell><cell>Nota Angkut</cell><cell>http://localhost/lhm/index.php/p_nota_angkut_header</cell><cell>1</cell><cell>44</cell><cell>45</cell><cell>true</cell><cell>true</cell></row>
+
+<row><cell>24</cell><cell>Nota Timbang</cell><cell>http://localhost/lhm/index.php/p_nota_timbang</cell><cell>1</cell><cell>46</cell><cell>47</cell><cell>true</cell><cell>true</cell></row>
+     
+  
+</rows>

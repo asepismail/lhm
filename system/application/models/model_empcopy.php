@@ -1,0 +1,1 @@
+<?class model_empcopy extends Model {    function model_empcopy()    {        parent::Model(); 		$this->load->database();    }			}?>

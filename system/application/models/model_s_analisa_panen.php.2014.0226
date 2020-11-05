@@ -1,0 +1,1984 @@
+<?php
+class model_s_analisa_panen extends Model{
+    function __construct(){
+        parent::__construct();  
+		$this->load->database();
+    }
+    
+    function get_supplier($company){
+        $query = $this->db->query("SELECT SUPPLIERCODE, SUPPLIERNAME FROM m_supplier WHERE COMPANY_CODE = '".$company."' AND ACTIVE=1");
+        
+        $temp_result = array();
+                
+        foreach ( $query->result_array() as $row ){
+            $temp_result [] = $row;
+            
+        }    
+        return $temp_result;  
+    }
+    
+    function get_afd($company){
+        $query = $this->db->query("SELECT AFD_CODE,COMPANY_CODE FROM m_afdeling WHERE COMPANY_CODE = '".$company."'");
+        
+        $temp_result = array();
+                
+        foreach ( $query->result_array() as $row ){
+            $temp_result [] = $row;
+            
+        }    
+        return $temp_result;  
+    }
+    
+    function get_kontraktor($company){
+        $query = $this->db->query("SELECT KODE_KONTRAKTOR, NAMA_KONTRAKTOR FROM m_kontraktor WHERE COMPANY_CODE = '".$company."' AND ACTIVE=1");
+        
+        $temp_result = array();
+                
+        foreach ( $query->result_array() as $row ){
+            $temp_result [] = $row;
+            
+        }    
+        return $temp_result;  
+    }
+    
+    function get_kontraktor_detail($kodekontraktor,$company){
+        $query = $this->db->query("SELECT KODE_KONTRAKTOR, NAMA_KONTRAKTOR FROM m_kontraktor WHERE COMPANY_CODE = '".$company."' 
+                    AND KODE_KONTRAKTOR='".$kodekontraktor."' AND ACTIVE=1");
+        $temp_result = array();       
+        foreach ( $query->result_array() as $row ){
+            $temp_result [] = $row;
+            
+        }    
+        return $temp_result;  
+    }
+    
+    function generate_tbglampbatpanen($kodekontraktor, $periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $kodekontraktor = $this->db->escape_str($kodekontraktor);
+        $company = $this->db->escape_str($company);    
+        
+        $query="SELECT a.ID_TIMBANGAN, a.NO_KENDARAAN, a.DRIVER_NAME, b.AFD, 
+                SUM(b.BERAT_REAL) AS BERAT_REAL, c.COST, 
+                (c.COST * SUM(b.BERAT_REAL)) AS C_TERIMA,
+                (0.02 * (c.COST * SUM(b.BERAT_REAL))) AS PPH23,
+                (4 * SUM(b.BERAT_REAL)) AS SPSI,
+                (c.COST * SUM(b.BERAT_REAL))-((0.02 * (c.COST * SUM(b.BERAT_REAL)))+(4 * SUM(b.BERAT_REAL))) AS C_TOTAL_TERIMA,
+                d.NAMA_KONTRAKTOR
+                FROM s_data_timbangan a
+                LEFT JOIN s_data_timbangan_detail b
+                    ON b.ID_TIMBANGAN = a.ID_TIMBANGAN
+                LEFT JOIN s_data_bjr_cost c
+                    ON c.AFD = b.AFD
+                LEFT JOIN m_kontraktor d
+                    on d.KODE_KONTRAKTOR = a.KODE_KONTRAKTOR
+                WHERE a.COMPANY_CODE='".$company."' and a.TYPE_BUAH=1 and a.TANGGALM BETWEEN '".$periode."' and '".$periode_to."'
+                    AND a.KODE_KONTRAKTOR='".$kodekontraktor."'
+                GROUP BY b.AFD, a.DRIVER_NAME
+                ORDER BY a.DRIVER_NAME,a.NO_KENDARAAN, b.AFD , a.TANGGALM ASC";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function generate_tbgbatpanen($kodekontraktor, $periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $kodekontraktor = $this->db->escape_str($kodekontraktor);
+        $company = $this->db->escape_str($company);    
+        
+        $query="SELECT a.ID_TIMBANGAN, a.NO_KENDARAAN, a.DRIVER_NAME, b.AFD, 
+                SUM(b.BERAT_REAL) AS BERAT_REAL, c.COST, 
+                (c.COST * SUM(b.BERAT_REAL)) AS C_TERIMA,
+                (0.02 * (c.COST * SUM(b.BERAT_REAL))) AS PPH23,
+                (4 * SUM(b.BERAT_REAL)) AS SPSI,
+                (c.COST * SUM(b.BERAT_REAL))-((0.02 * (c.COST * SUM(b.BERAT_REAL)))+(4 * SUM(b.BERAT_REAL))) AS C_TOTAL_TERIMA,
+                d.NAMA_KONTRAKTOR
+                FROM s_data_timbangan a
+                LEFT JOIN s_data_timbangan_detail b
+                    ON b.ID_TIMBANGAN = a.ID_TIMBANGAN
+                LEFT JOIN s_data_bjr_cost c
+                    ON c.AFD = b.AFD
+                LEFT JOIN m_kontraktor d
+                    on d.KODE_KONTRAKTOR = a.KODE_KONTRAKTOR
+                WHERE a.COMPANY_CODE='".$company."' and a.TYPE_BUAH=1 and a.TANGGALM BETWEEN '".$periode."' and '".$periode_to."'
+                    AND a.KODE_KONTRAKTOR='".$kodekontraktor."'
+                GROUP BY b.AFD
+                ORDER BY b.AFD , a.TANGGALM ASC";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function generate_dttbgbatpanen($afd, $periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $afd = $this->db->escape_str($afd);
+        $company = $this->db->escape_str($company);    
+        
+        if (strtolower($afd)!='all'){
+            $wAfd=" AND a.AFD = '".$afd."'";    
+        }else{
+            $wAfd="";
+        }
+        $query="select b.TANGGALM, a.NO_KENDARAAN,a.NO_TIKET
+                            ,a.BLOCK, a.BERAT_REAL, c.COST,
+                            (a.BERAT_REAL * c.COST) as JUMLAH,
+                            (0.02*(a.BERAT_REAL * c.COST)) AS POTONGAN,
+                            ((a.BERAT_REAL * c.COST)-(0.02*(a.BERAT_REAL * c.COST))) AS JUMLAH_AKHIR
+                from s_data_timbangan_detail a
+                INNER JOIN s_data_timbangan b
+                    on a.ID_TIMBANGAN = b.ID_TIMBANGAN
+                LEFT JOIN s_data_bjr_cost c
+                    on c.COMPANY_CODE = b.COMPANY_CODE AND
+                        c.AFD = b.AFD
+                where b.COMPANY_CODE='".$company."' and b.TYPE_BUAH=1 and b.TANGGALM BETWEEN '".$periode."' and '".$periode_to."'
+                    $wAfd  
+                ORDER BY b.TANGGALM, a.BLOCK ASC";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function generate_adem_dispatch($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+         $query="SELECT CONCAT(dpc.COMPANY_CODE,'-','Site'),dpc.ID_DISPATCH AS DOCUMENT_NO,'MM Shipment' as DocTypeName,
+                     dpc.TANGGALM,dpcdo.SO_NUMBER AS ORDER_NO,
+                     CASE WHEN TRIM(dpc.JENIS) = 'KERNEL' THEN 'PK' ELSE TRIM(dpc.JENIS) END AS JENIS, dpc.BERAT_BERSIH, dpc.ID_DISPATCH, dpc.NO_KENDARAAN,
+                     CASE WHEN TRIM(dpc.JENIS) = 'KERNEL' THEN 'Gd PK $company' ELSE 'Gd CPO $company' END AS warehouse
+                     FROM s_dispatch dpc
+                     LEFT JOIN s_dispatch_do dpcdo ON dpcdo.ID_DO = dpc.ID_DO 
+                     WHERE dpc.COMPANY_CODE ='".$company."'  
+                     AND DATE_FORMAT(dpc.TANGGALM,'%Y%m%d') BETWEEN 
+                     DATE_FORMAT('".$periode."','%Y%m%d') AND 
+                     DATE_FORMAT('".$periode_to."','%Y%m%d')";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+        /*
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result; */   
+    }
+    
+    function generate_adem_tbsin($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+         $query="SELECT TANGGALM,'Gd TBS $company' AS Locator , JENIS_MUATAN AS Product, 0-BERAT_BERSIH AS Quantity_Use, 
+                     NO_TIKET , NO_KENDARAAN, NO_SPB, '$company-Site' AS OrgKey 
+                     From s_data_timbangan 
+                     WHERE COMPANY_CODE='".$company."' AND JENIS_MUATAN='TBS' AND TYPE_BUAH=1 
+                     AND DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN 
+                     DATE_FORMAT('".$periode."','%Y%m%d') AND 
+                     DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                ORDER BY TANGGALM ASC";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+    
+    function generate_adem_tbsout($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+         $query="SELECT TANGGALM,'Gd TBS $company' AS Locator , JENIS_MUATAN AS Product, BERAT_BERSIH AS Quantity_Use, 
+                     CONCAT(NO_TIKET,'_o') AS NO_TIKET , NO_KENDARAAN, NO_SPB, '$company-Site' AS OrgKey  
+                     From s_data_timbangan 
+                     WHERE COMPANY_CODE='".$company."' AND JENIS_MUATAN='TBS' AND TYPE_BUAH=1 
+                     AND DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN 
+                     DATE_FORMAT('".$periode."','%Y%m%d') AND 
+                     DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                ORDER BY TANGGALM ASC";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+    
+    function generate_adem_tbsplasma($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+         $query="SELECT '$company-Site' AS locator,a.NO_TIKET,'MM Receipt' AS ship,a.TANGGALM,'PO-NUM-PLACE-HERE' as SO_NUMBER,
+                    'TBS-Plasma' as JENIS_MUATAN, a.BERAT_BERSIH, a.NO_TIKET as NO_TIKET1,a.NO_KENDARAAN, 'Gd TBS $company' AS warehouse
+                    FROM s_data_timbangan a
+                    where a.COMPANY_CODE='".$company."' and a.JENIS_MUATAN='TBS' 
+                        and a.TYPE_BUAH=3 and DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN 
+                     DATE_FORMAT('".$periode."','%Y%m%d') AND 
+                     DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                ORDER BY TANGGALM ASC";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+    
+    function generate_adem_tbsluar($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+         $query="SELECT '$company-Site' AS locator,a.NO_TIKET,'MM Receipt' AS ship,a.TANGGALM,a.PO_NUMBER as SO_NUMBER,
+                    'TBS-Luar' as JENIS_MUATAN, ROUND(a.BERAT_BERSIH) as BERAT_BERSIH, 
+                    a.NO_TIKET as NO_TIKET1,a.NO_KENDARAAN, 'Gd TBS $company' AS warehouse, a.SUPPLIERCODE
+                    FROM s_data_timbangan a
+                    where a.COMPANY_CODE='".$company."' and a.JENIS_MUATAN='TBS' 
+                        and a.TYPE_BUAH=2 and DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN 
+                     DATE_FORMAT('".$periode."','%Y%m%d') AND 
+                     DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                ORDER BY a.TANGGALM,a.SUPPLIERCODE ASC";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+
+    function generate_adem_tbsafiliasi($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+         $query="SELECT '$company-Site' AS locator,a.ID_TIMBANGAN,'MM Receipt' AS ship,a.TANGGALM,a.PO_NUMBER as SO_NUMBER,
+                    'TBS-Luar' as JENIS_MUATAN, ROUND(a.BERAT_BERSIH) as BERAT_BERSIH, 
+                    a.NO_TIKET as NO_TIKET1,a.NO_KENDARAAN, 'Gd TBS $company' AS warehouse
+                    FROM s_data_timbangan a
+                    where a.COMPANY_CODE='".$company."' and a.JENIS_MUATAN='TBS' 
+                        and a.TYPE_BUAH=4 and DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN 
+                     DATE_FORMAT('".$periode."','%Y%m%d') AND 
+                     DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                ORDER BY a.TANGGALM,a.SUPPLIERCODE ASC";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+
+    function generate_adem_produksi($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query="SELECT s_data_timbangan.TANGGALM AS TANGGAL, 'Gd CPO $company' AS Locator,'CPO' AS Product,        
+                            ROUND(CASE WHEN COALESCE(VOL_H,0) > 0 THEN    
+                                CASE WHEN COALESCE(VOL_MIN,0) = 0 THEN
+                                (
+                                    0-COALESCE((COALESCE(VOL_H,0)+COALESCE(VOL_DISPATCH,0))-
+                                    COALESCE((SELECT SUM(snd.WEIGHT) as WEIGHT
+                                        FROM s_sounding snd
+                                        WHERE snd.COMPANY_CODE='".$company."' and DATE_FORMAT(snd.DATE,'%Y%m%d') = DATE_FORMAT((SELECT MAX(DATE)-- and snd.ACTIVE =1
+                                            FROM s_sounding snd
+                                            WHERE snd.DATE < s_data_timbangan.TANGGALM and snd.COMPANY_CODE='".$company."' ),'%Y%m%d')GROUP BY snd.DATE),0),0)
+                                )
+                                WHEN COALESCE(VOL_MIN,0) > 0 THEN  
+                                    0-COALESCE((COALESCE(VOL_H,0)+COALESCE(VOL_DISPATCH,0))-COALESCE(VOL_MIN,0),0)
+                                END
+                            WHEN COALESCE(VOL_H,0) = 0 THEN '0'
+                            END,-1) AS  PROD_CPO ,
+                            ID_SOUNDING,'','','','$company-Site'
+                FROM s_data_timbangan
+                LEFT JOIN(
+                                SELECT SUM(snd.WEIGHT)AS VOL_MIN,snd.COMPANY_CODE,`DATE` 
+                                FROM s_sounding snd
+                                WHERE snd.TYPE_S='1' AND snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' 
+                                   GROUP BY snd.DATE
+                            )sounding_min ON sounding_min.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                                AND DATE(DATE_FORMAT(sounding_min.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))-1
+                LEFT JOIN(
+                                SELECT SUM(snd.WEIGHT)AS VOL_H,snd.COMPANY_CODE,`DATE`,ID_SOUNDING
+                                FROM s_sounding snd  
+                                WHERE snd.TYPE_S='1' AND snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' 
+                                   GROUP BY snd.DATE
+                            )sounding_h ON sounding_h.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                                AND DATE(DATE_FORMAT(sounding_h.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+                LEFT JOIN(
+                                SELECT coalesce(sum(BERAT_BERSIH),0) AS VOL_DISPATCH,COMPANY_CODE,TANGGALM
+                                FROM s_dispatch
+                                WHERE s_dispatch.ACTIVE='1' AND s_dispatch.COMPANY_CODE='".$company."' and 
+                                    s_dispatch.ID_KOMODITAS = (
+                                        select ID_KOMODITAS from s_komoditas
+                                        where s_komoditas.COMPANY_CODE = '".$company."'
+                                            and s_komoditas.JENIS like 'CP%'
+                                    )
+                                group by s_dispatch.TANGGALM
+                            )dispatch ON dispatch.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                                AND DATE(DATE_FORMAT(dispatch.TANGGALM,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))    
+                WHERE s_data_timbangan.COMPANY_CODE='".$company."' AND DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d') BETWEEN 
+                                        DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d')
+                            AND s_data_timbangan.TYPE_BUAH=1 AND s_data_timbangan.TYPE_TIMBANG=1
+                            AND s_data_timbangan.JENIS_MUATAN='TBS'
+                GROUP BY s_data_timbangan.TANGGALM, s_data_timbangan.COMPANY_CODE";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+    
+    function generate_adem_produksi_kernel($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query="SELECT s_data_timbangan.TANGGALM AS TANGGAL, 'Gd PK $company' AS Locator,'PK' AS Product,        
+                            ROUND(0-((COALESCE(VOL_KERNEL,0) - COALESCE(VOL_KERNEL_MIN,0))+COALESCE(VOL_DISPATCH_KERNEL,0)),-1) AS PROD_KERNEL,
+                            ID_SOUNDING_KERNEL,'','','','$company-Site'
+                FROM s_data_timbangan
+                LEFT JOIN(
+                                SELECT coalesce(sum(BERAT_BERSIH),0) AS VOL_DISPATCH,COMPANY_CODE,TANGGALM
+                                FROM s_dispatch
+                                WHERE s_dispatch.ACTIVE='1' AND s_dispatch.COMPANY_CODE='".$company."' and 
+                                    s_dispatch.ID_KOMODITAS = (
+                                        select ID_KOMODITAS from s_komoditas
+                                        where s_komoditas.COMPANY_CODE = '".$company."'
+                                            and s_komoditas.JENIS like 'CP%'
+                                    )
+                                group by s_dispatch.TANGGALM
+                            )dispatch ON dispatch.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                                AND DATE(DATE_FORMAT(dispatch.TANGGALM,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))    
+                LEFT JOIN(
+                         SELECT SUM(sndk.WEIGHT)AS VOL_KERNEL, sndk.COMPANY_CODE, sndk.DATE, ID_SOUNDING_KERNEL,
+                            case when coalesce(VOL_KERNEL_MIN,0) = 0 then
+                                (
+                                    SELECT SUM(sndk2.WEIGHT)AS VOL_KERNEL_MIN 
+                                     FROM s_sounding_kernel sndk2  
+                                     WHERE sndk2.ACTIVE=1 and sndk2.COMPANY_CODE='".$company."'
+                                        and sndk2.DATE = (
+                                            select max(DATE) from s_sounding_kernel
+                                            where ACTIVE=1 AND s_sounding_kernel.COMPANY_CODE='".$company."' 
+                                                and DATE_FORMAT(date,'%Y%m%d') < DATE_FORMAT(sndk.DATE,'%Y%m%d')
+                                        ) and sndk2.COMPANY_CODE = sndk.COMPANY_CODE
+                                        GROUP BY sndk2.DATE
+                                )
+                            when COALESCE(VOL_KERNEL_MIN,0) > 0 then VOL_KERNEL_MIN    
+                            end as VOL_KERNEL_MIN,VOL_DISPATCH_KERNEL
+                         FROM s_sounding_kernel sndk   
+                         left join(
+                            SELECT SUM(sndk1.WEIGHT)AS VOL_KERNEL_MIN, sndk1.COMPANY_CODE, sndk1.DATE 
+                             FROM s_sounding_kernel sndk1  
+                             WHERE sndk1.ACTIVE=1 AND sndk1.COMPANY_CODE='".$company."' 
+                                GROUP BY sndk1.DATE
+                         )sndk_min on sndk_min.COMPANY_CODE = sndk.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(sndk_min.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(sndk.DATE,'%Y%m%d'))-1
+                         LEFT JOIN(
+                                SELECT COALESCE(sum(BERAT_BERSIH),0) AS VOL_DISPATCH_KERNEL,COMPANY_CODE,TANGGALM
+                                FROM s_dispatch
+                                WHERE s_dispatch.ACTIVE='1' AND s_dispatch.COMPANY_CODE='".$company."' AND 
+                                    s_dispatch.ID_KOMODITAS = (
+                                        SELECT ID_KOMODITAS FROM s_komoditas
+                                        WHERE s_komoditas.COMPANY_CODE = '".$company."'
+                                            AND s_komoditas.JENIS LIKE 'KER%'
+                                    )
+                                GROUP BY s_dispatch.TANGGALM
+                         )dispatch_kernel ON dispatch_kernel.COMPANY_CODE = sndk.COMPANY_CODE
+                                AND DATE(DATE_FORMAT(dispatch_kernel.TANGGALM,'%Y%m%d')) = DATE(DATE_FORMAT(sndk.DATE,'%Y%m%d'))
+                         WHERE sndk.ACTIVE=1 AND sndk.COMPANY_CODE='".$company."' 
+                            GROUP BY sndk.DATE
+                    )produksi_kernel ON produksi_kernel.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(produksi_kernel.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+                WHERE s_data_timbangan.COMPANY_CODE='".$company."' AND DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d') BETWEEN 
+                                        DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d')
+                             AND s_data_timbangan.TYPE_BUAH=1 AND s_data_timbangan.TYPE_TIMBANG=1
+                             AND s_data_timbangan.JENIS_MUATAN='TBS'
+                GROUP BY s_data_timbangan.TANGGALM, s_data_timbangan.COMPANY_CODE";
+        $sQuery = $this->db->query($query);
+        
+        $delimiter = ",";
+        $newline = "\r\n";
+        $enclosure = "";
+        return $this->dbutil->csv_from_result($sQuery, $delimiter, $newline,$enclosure); 
+          
+    }
+    
+    function cek_data_exist($tableName,$where_condition,$select_condition){
+        $this->db->select($select_condition);
+        $this->db->from($tableName);
+        $this->db->where($where_condition);
+        
+        $sQuery = $this->db->get();
+        $count = $sQuery->num_rows();
+           
+        return $count;
+    }
+
+	//## Create report: Laporan - Produksi Kebun(panen) ##	
+	/*
+    function generate_lhm_nab($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $month_start = date("Ymd", strtotime(date('m',strtotime("$periode")).'/01/'.date('Y').' 00:00:00'));
+        $month_end = date("Ymd", strtotime('-1 second',strtotime('+1 month',strtotime(date('m',strtotime("$periode")).'/01/'.date('Y').' 00:00:00'))));
+        $company = $this->db->escape_str($company);
+		$temp_result [] = null;
+        
+        //$cek_data_exist = $this->cek_data_exist('m_gang_activity_detail',array('COMPANY_CODE'=>$company,'LHM_DATE'=>$periode),'ID');
+        //if ($cek_data_exist <= 0){
+            //$qSP ="CALL sp_tbg_gen_produksi_tbs_hist(?,?,?,?)";
+        //}else
+        //{
+            if($company=='GKM' || $company=='SML'){
+                    $qSP ="CALL sp_tbg_gen_produksi_tbs_gkmgroup(?,?,?,?)";
+            }else{
+                    $qSP ="CALL sp_tbg_gen_produksi_tbs(?,?,?,?)";    
+            }  
+        //}
+
+        $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$month_start));
+        
+        $numrows = $sQuery->num_rows();
+        if ($numrows > 0){
+            $temp = $sQuery->row_array();
+            $temp_result = array(); 
+            foreach ( $sQuery->result_array() as $row )
+            {
+                $temp_result [] = $row;
+                
+            }
+        }else{
+            $sQuery->free_result();
+            $this->db->close(); 
+            
+            $qSP ="CALL sp_tbg_gen_produksi_tbs_hist(?,?,?,?)";
+            $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$month_start));
+            
+            $numrows = $sQuery->num_rows();
+            if ($numrows > 0){
+                $temp = $sQuery->row_array();
+                $temp_result = array(); 
+                foreach ( $sQuery->result_array() as $row )
+                {
+                    $temp_result [] = $row;
+                    
+                }
+            }
+                
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+	*/
+	
+    function runjob_nab($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $month_start = date("Ymd", strtotime(date('m',strtotime("$periode")).'/01/'.date('Y').' 00:00:00'));
+        $month_end = date("Ymd", strtotime('-1 second',strtotime('+1 month',strtotime(date('m',strtotime("$periode")).'/01/'.date('Y').' 00:00:00'))));
+        $company = $this->db->escape_str($company);
+		$temp_result [] = null;
+        
+       	if($company=='GKM' || $company=='SML'){
+        	$qSP ="CALL sp_tbg_gen_produksi_tbs_gkmgroup(?,?,?,?)";
+			
+        }else{
+        	$qSP ="CALL sp_tbg_gen_produksi_tbs(?,?,?,?)";    
+       }  	
+        $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$month_start));
+        
+        $numrows = $sQuery->num_rows();
+        if ($numrows > 0){
+            $temp = $sQuery->row_array();
+            $temp_result = array(); 
+            foreach ( $sQuery->result_array() as $row )
+            {
+                $temp_result [] = $row;
+                
+            }
+        }else{
+            $sQuery->free_result();
+            $this->db->close(); 
+            
+            $qSP ="CALL sp_tbg_gen_produksi_tbs_hist(?,?,?,?)";
+            $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$month_start));
+            
+            $numrows = $sQuery->num_rows();
+            if ($numrows > 0){
+                $temp = $sQuery->row_array();
+                $temp_result = array(); 
+                foreach ( $sQuery->result_array() as $row )
+                {
+                    $temp_result [] = $row;
+                    
+                }
+            }
+                
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+	
+	function delete_rpt_nab($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+		$status = FALSE;
+
+		$query ="DELETE FROM rpt_nab 
+				WHERE DATE_TRANSACT BETWEEN '". $periode. "' AND '". $periode_to. "'
+				AND COMPANY_CODE ='". $company ."'";
+        $sQuery = $this->db->query($query);		
+    	if($this->db->trans_status() == FALSE){
+        	$status = $this->db->_error_message();
+			$status=FALSE;
+       	}else{
+        	$status=TRUE;   
+        }
+
+        return $status;
+    }
+	//generate_lhm_nab Modified by Asep, 20130819
+	function generate_lhm_nab($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+		$temp_result [] = null;
+        
+		$query ="SELECT * FROM rpt_nab r 
+				WHERE r.DATE_TRANSACT BETWEEN '". $periode. "' AND '". $periode_to. "'
+				AND r.COMPANY_CODE ='". $company ."'
+				ORDER BY r.DATE_TRANSACT, r.LOCATION_CODE";
+		
+        $sQuery = $this->db->query($query);
+        
+        $numrows = $sQuery->num_rows();
+        if ($numrows > 0){
+            $temp = $sQuery->row_array();
+            $temp_result = array(); 
+            foreach ( $sQuery->result_array() as $row )
+            {
+                $temp_result [] = $row;
+                
+            }
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+	//## Create report: Summary Produksi Kebun(panen) ##
+    function generate_sum_lhm_nab($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $month_start = date("Ymd", strtotime(date('m',strtotime("$periode")).'/01/'.date('Y').' 00:00:00'));
+        $month_end = date("Ymd", strtotime('-1 second',strtotime('+1 month',strtotime(date('m',strtotime("$periode")).'/01/'.date('Y').' 00:00:00'))));
+        $company = $this->db->escape_str($company);
+		$temp_result [] = null;
+        
+
+            if($company == 'GKM' || $company == 'SML'){
+                    $qSP ="CALL sp_tbg_gen_sum_produksi_tbs_gkmgroup(?,?,?,?)";
+            }else{
+                    $qSP ="CALL sp_tbg_gen_sum_produksi_tbs(?,?,?,?)";    
+            }  
+
+        $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$month_start));
+        
+        $numrows = $sQuery->num_rows();
+        if ($numrows > 0){
+            $temp = $sQuery->row_array();
+            $temp_result = array(); 
+            foreach ( $sQuery->result_array() as $row )
+            {
+                $temp_result [] = $row;
+                
+            }
+        }else{
+            $sQuery->free_result();
+            $this->db->close(); 
+            
+            $qSP ="CALL sp_tbg_gen_produksi_tbs_hist(?,?,?,?)";
+            $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$month_start));
+            
+            $numrows = $sQuery->num_rows();
+            if ($numrows > 0){
+                $temp = $sQuery->row_array();
+                $temp_result = array(); 
+                foreach ( $sQuery->result_array() as $row )
+                {
+                    $temp_result [] = $row;
+                    
+                }
+            }
+                
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function generate_lhm_bjr($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query="SELECT data_panen_lhm.TANGGAL_PANEN, data_nab_tbg.TANGGAL_TIMBANG, 
+                                data_nab_tbg.TANGGAL_PANEN as TANGGAL_PANEN_NAB,
+                                data_panen_lhm.LOCATION_CODE, data_panen_lhm.JANJANG_PANEN,
+                                COALESCE(data_nab_tbg.JJG_ANGKUT_NAB,0) AS JJG_ANGKUT_NAB, COALESCE(data_nab_tbg.JJG_ANGKUT_TBG,0) AS JJG_ANGKUT_TBG,
+                              CASE WHEN data_panen_lhm.JANJANG_PANEN = data_nab_tbg.JJG_ANGKUT_NAB
+                                     THEN BJR_REAL
+                              WHEN data_panen_lhm.JANJANG_PANEN != data_nab_tbg.JJG_ANGKUT_NAB
+                                     THEN 0
+                                END AS BJRREAL,
+                                COALESCE(data_nab_tbg.BJR_REAL,0) AS BJR_REAL,
+                                COALESCE(data_nab_tbg.BERAT_EMPIRIS,0) AS BERAT_EMPIRIS, COALESCE(data_nab_tbg.BERAT_REAL,0) AS BERAT_REAL,
+                                data_nab_tbg.NO_SPB as SPB_NAB, data_nab_tbg.NO_SPB as SPB_TBG
+                FROM(
+                      SELECT LHM_DATE AS TANGGAL_PANEN,LOCATION_CODE,ACTIVITY_CODE,SUM(HSL_KERJA_VOLUME)AS JANJANG_PANEN
+                      FROM m_gang_activity_detail mgad
+                      WHERE DATE_FORMAT(LHM_DATE,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d') 
+                              AND mgad.COMPANY_CODE='".$company."' 
+                              AND ACTIVITY_CODE ='8601003'
+                      GROUP BY LOCATION_CODE, LHM_DATE -- ORDER BY LHM_DATE ASC, LOCATION_CODE asc
+                )data_panen_lhm 
+                LEFT JOIN(
+                            SELECT data_tbg.BLOCK, data_tbg.TANGGALM as TANGGAL_TIMBANG ,data_tbg.TANGGAL_PANEN,
+                                    COALESCE(sum(data_tbg.BERAT_EMPIRIS),0) as BERAT_EMPIRIS,
+                                    COALESCE(sum(data_tbg.BERAT_REAL),0) as BERAT_REAL,sum(data_tbg.JANJANG) as JJG_ANGKUT_TBG,
+                                    COALESCE((sum(data_tbg.BERAT_REAL)/sum(data_tbg.JANJANG)),0) AS BJR_REAL ,
+                                    data_tbg.NO_SPB, data_tbg.NO_TIKET, sum(data_tbg.JANJANG) as JJG_ANGKUT_NAB
+                            FROM(
+                                        SELECT tbgd.BLOCK,tbg.TANGGALM,
+                                                    tbgd.BERAT_EMPIRIS,
+                                                    tbgd.BERAT_REAL,tbgd.JANJANG,
+                                                    tbg.NO_SPB,tbg.NO_TIKET, tbgd.TANGGAL_PANEN
+                                        FROM s_data_timbangan tbg 
+                                        LEFT JOIN s_data_timbangan_detail tbgd ON tbgd.ID_TIMBANGAN = tbg.ID_TIMBANGAN
+                                        WHERE DATE_FORMAT(tbg.TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                                        AND tbg.COMPANY_CODE='".$company."'
+                                                        AND tbg.TYPE_BUAH =1 AND tbg.TYPE_TIMBANG =1
+                                        ORDER BY NO_SPB, TANGGALM asc, BLOCK ASC
+                                                                ) data_tbg
+                            GROUP BY data_tbg.BLOCK, data_tbg.TANGGAL_PANEN -- data_tbg.TANGGALM 
+                            -- ORDER BY data_tbg.TANGGALM ASC, data_tbg.BLOCK ASC
+        )data_nab_tbg ON TRIM(UPPER(data_nab_tbg.BLOCK)) = TRIM(UPPER(data_panen_lhm.LOCATION_CODE)) 
+                and DATE_FORMAT(data_nab_tbg.TANGGAL_PANEN,'%Y%m%d') = DATE_FORMAT(data_panen_lhm.TANGGAL_PANEN,'%Y%m%d') 
+                ORDER BY data_panen_lhm.TANGGAL_PANEN ASC,data_nab_tbg.BLOCK ASC";
+                /*"SELECT data_panen_lhm.TANGGAL_PANEN, data_nab_tbg.TANGGAL_TIMBANG, 
+                                data_nab_tbg.TANGGAL_PANEN as TANGGAL_PANEN_NAB,
+                                data_panen_lhm.LOCATION_CODE, data_panen_lhm.JANJANG_PANEN,
+                                COALESCE(data_nab_tbg.JJG_ANGKUT_NAB,0) AS JJG_ANGKUT_NAB, COALESCE(data_nab_tbg.JJG_ANGKUT_TBG,0) AS JJG_ANGKUT_TBG,
+                              CASE WHEN data_panen_lhm.JANJANG_PANEN = data_nab_tbg.JJG_ANGKUT_NAB
+                                     THEN BJR_REAL
+                              WHEN data_panen_lhm.JANJANG_PANEN != data_nab_tbg.JJG_ANGKUT_NAB
+                                     THEN 0
+                                END AS BJRREAL,
+                                COALESCE(data_nab_tbg.BJR_REAL,0) AS BJR_REAL,
+                                COALESCE(data_nab_tbg.BERAT_EMPIRIS,0) AS BERAT_EMPIRIS, COALESCE(data_nab_tbg.BERAT_REAL,0) AS BERAT_REAL,
+                                data_nab_tbg.NO_SPB as SPB_NAB, data_nab_tbg.NO_SPB as SPB_TBG
+                FROM(
+                      SELECT LHM_DATE AS TANGGAL_PANEN,LOCATION_CODE,ACTIVITY_CODE,SUM(HSL_KERJA_VOLUME)AS JANJANG_PANEN
+                      FROM m_gang_activity_detail mgad
+                      WHERE DATE_FORMAT(LHM_DATE,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d') 
+                              AND mgad.COMPANY_CODE='".$company."' 
+                              AND ACTIVITY_CODE ='8601003'
+                      GROUP BY LOCATION_CODE, LHM_DATE ORDER BY LHM_DATE ASC, LOCATION_CODE asc
+                )data_panen_lhm 
+                LEFT JOIN(
+                            SELECT data_tbg.BLOCK, data_tbg.TANGGALM as TANGGAL_TIMBANG ,data_nab.TANGGAL_PANEN,
+                                    COALESCE(sum(data_tbg.BERAT_EMPIRIS),0) as BERAT_EMPIRIS,
+                                    COALESCE(sum(data_tbg.BERAT_REAL),0) as BERAT_REAL,sum(data_tbg.JANJANG) as JJG_ANGKUT_TBG,
+                                    COALESCE((sum(data_tbg.BERAT_REAL)/sum(data_tbg.JANJANG)),0) AS BJR_REAL ,
+                                    data_tbg.NO_SPB, data_tbg.NO_TIKET, sum(data_nab.JANJANG) as JJG_ANGKUT_NAB
+                            FROM(
+                                        SELECT tbgd.BLOCK,tbg.TANGGALM,
+                                                    tbgd.BERAT_EMPIRIS,
+                                                    tbgd.BERAT_REAL,tbgd.JANJANG,
+                                                    tbg.NO_SPB,tbg.NO_TIKET
+                                        FROM s_data_timbangan tbg
+                                        LEFT JOIN s_data_timbangan_detail tbgd ON tbgd.ID_TIMBANGAN = tbg.ID_TIMBANGAN
+                                        WHERE DATE_FORMAT(tbg.TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                                        AND tbg.COMPANY_CODE='".$company."'
+                                                        AND tbg.TYPE_BUAH =1 AND tbg.TYPE_TIMBANG =1
+                                        ORDER BY NO_SPB, TANGGALM asc, BLOCK ASC) data_tbg
+                            INNER JOIN (
+                                                SELECT nab.NO_TIKET,nab.NO_SPB,nabd.TANGGAL_PANEN,nabd.BLOCK,nabd.JANJANG
+                                                FROM s_nota_angkutbuah nab
+                                                INNER JOIN s_nota_angkutbuah_detail nabd on nabd.ID_NT_AB = nab.ID_NT_AB 
+                                                WHERE nab.COMPANY_CODE = '".$company."' and nab.ACTIVE = 1 -- and nab.ID_NT_AB='MIANAB1107060009'
+                                                         AND DATE_FORMAT(nabd.TANGGAL_PANEN,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d')  
+                                                                                AND DATE_FORMAT('".$periode_to."','%Y%m%d')
+                                                ORDER BY nab.NO_TIKET ASC
+                            )data_nab on data_nab.NO_TIKET = data_tbg.NO_TIKET and data_nab.NO_SPB=data_tbg.NO_SPB 
+                                                and data_nab.TANGGAL_PANEN = data_tbg.TANGGALM
+                                                and data_nab.BLOCK = data_tbg.BLOCK
+                                            GROUP BY data_tbg.BLOCK, data_tbg.TANGGALM ORDER BY data_tbg.TANGGALM ASC, data_tbg.NO_TIKET ASC, data_tbg.BLOCK ASC
+        )data_nab_tbg ON data_nab_tbg.BLOCK = data_panen_lhm.LOCATION_CODE and data_nab_tbg.TANGGAL_PANEN = data_panen_lhm.TANGGAL_PANEN";*/
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+	
+    function generate_lhm_tbg($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query="select a.ID_TIMBANGAN, a.TANGGALM, a.NO_TIKET, a.NO_SPB, a.NO_KENDARAAN, a.BERAT_BERSIH, b.AFD, b.BLOCK ,  b.JANJANG, b.BERAT_EMPIRIS, b.BERAT_REAL
+                from s_data_timbangan a
+                    inner join s_data_timbangan_detail b on b.ID_TIMBANGAN = a.ID_TIMBANGAN
+                where DATE_FORMAT(a.TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode_to."','%Y%m%d')
+                               AND a.COMPANY_CODE='".$company."'
+                               AND a.TYPE_TIMBANG =1 -- AND a.TYPE_BUAH =1 
+                order by ID_TIMBANGAN asc ";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function get_jjg_angkut($periode,$company){
+        $periode = $this->db->escape_str($periode);
+        $company = $this->db->escape_str($company);
+        
+        $query = "SELECT nab.NO_TIKET,nab.NO_SPB,nabd.TANGGAL_PANEN,nabd.BLOCK , sum(nabd.JANJANG) as JJG_ANGKUT
+                    FROM s_nota_angkutbuah nab
+                         INNER JOIN s_nota_angkutbuah_detail nabd on nabd.ID_NT_AB = nab.ID_NT_AB 
+                          WHERE nab.COMPANY_CODE = '".$company."' and nab.ACTIVE = 1 and 
+                          DATE_FORMAT(nab.TANGGAL,'%Y%m%d') = DATE_FORMAT('".$periode."','%Y%m%d') and
+                          DATE_FORMAT(nabd.TANGGAL_PANEN,'%Y%m%d')=DATE_FORMAT('".$periode."','%Y%m%d')
+                    group by nabd.BLOCK
+                    order by nabd.BLOCK asc";
+                    
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function get_panen_breakdown($periode,$company,$location){
+        $periode = $this->db->escape_str($periode);
+        $company = $this->db->escape_str($company);
+        $location = $this->db->escape_str($location);
+        $table='';
+        if ($company=='GKM' || $company=='SML'){
+            $table='dummy_mgangactivitydetail_gkm';    
+        }else{
+            $table='m_gang_activity_detail';
+        }
+        $query = "SELECT LOCATION_CODE,ACTIVITY_CODE,HSL_KERJA_VOLUME,LHM_DATE,EMPLOYEE_CODE, emp.NAMA
+                FROM ".$table." mgad 
+                LEFT JOIN m_employee emp on emp.NIK = mgad.EMPLOYEE_CODE 
+                WHERE 
+                    DATE_FORMAT(LHM_DATE,'%Y%m%d')='".$periode."'
+                    AND mgad.ACTIVITY_CODE= '8601003'
+                    AND mgad.COMPANY_CODE='".$company."'
+                    AND mgad.LOCATION_CODE ='".$location."'
+                    ORDER BY mgad.LOCATION_CODE ASC";
+                    
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function get_tbg_breakdown($periode,$company,$location){
+        $periode = $this->db->escape_str($periode);
+        $company = $this->db->escape_str($company);
+        $location = $this->db->escape_str($location);
+        $type_buah='';
+        if ($company=='GKM' || $company=='SML'){
+            $type_buah='4';    
+        }else{
+            $type_buah='1';
+        }
+        
+       // $query = "SELECT tbg.TANGGALM,tbgd.TANGGAL_PANEN,tbg.NO_SPB,tbgd.AFD,tbgd.BLOCK, BERAT_ISI,BERAT_KOSONG,BERAT_BERSIH, tbgd.JANJANG,tbgd.BERAT_EMPIRIS,tbgd.BERAT_REAL,(tbgd.BERAT_REAL/tbgd.JANJANG) AS BJR_REAL FROM s_data_timbangan tbg LEFT JOIN s_data_timbangan_detail tbgd ON tbgd.ID_TIMBANGAN = tbg.ID_TIMBANGAN WHERE DATE_FORMAT(TANGGALM,'%Y%m%d')=DATE_FORMAT('".$periode."','%Y%m%d') AND tbgd.BLOCK='".$location."' AND tbg.COMPANY_CODE ='".$company."' AND tbg.TYPE_BUAH =".$type_buah." AND tbg.TYPE_TIMBANG =1 ORDER BY tbgd.BLOCK ASC, tbg.NO_SPB ASC "; //Remarked By Asep, 20130508
+	   	$query = "SELECT nab.TANGGAL AS TANGGALM, nabd.TANGGAL_PANEN, nab.NO_SPB, nabd.JANJANG AS JANJANG, '' AS BERAT_EMPIRIS, nabd.TONASE AS BERAT_REAL, '' AS BJR_REAL FROM s_nota_angkutbuah nab INNER JOIN s_nota_angkutbuah_detail nabd ON nab.ID_NT_AB = nabd.ID_NT_AB WHERE nab.COMPANY_CODE='".$company."' AND DATE_FORMAT(nabd.TANGGAL_PANEN,'%Y%m%d')=DATE_FORMAT('".$periode."','%Y%m%d') AND nabd.BLOCK='".$location."'"; //added by Asep, 20130508
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+    }
+    
+    function get_nab_data($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query = "select a.ID_NT_AB,a.NO_TIKET,a.NO_SPB,a.NO_KENDARAAN, b.AFD,b.BLOCK,b.JANJANG,b.TANGGAL_PANEN
+                    from s_nota_angkutbuah a
+                    LEFT JOIN s_nota_angkutbuah_detail b
+                        on b.ID_NT_AB = a.ID_NT_AB
+                    where a.COMPANY_CODE='".$company."' and DATE_FORMAT(a.TANGGAL,'%Y%m%d') 
+                            BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') and DATE_FORMAT('".$periode_to."','%Y%m%d')
+                        and a.ACTIVE=1 ";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+	//## Create Report: Export TBG
+    function get_tbg_data($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query = "select a.ID_TIMBANGAN,a.NO_TIKET,a.NO_SPB, a.NO_KENDARAAN,a.TANGGALM,a.TANGGALK,
+                    a.BERAT_ISI,a.BERAT_KOSONG,a.BERAT_BERSIH, b.AFD,b.BLOCK,b.JANJANG,b.BERAT_EMPIRIS,b.BERAT_REAL,
+			CASE WHEN a.TYPE_BUAH = 1 THEN 'INTI'
+			 WHEN a.TYPE_BUAH = 2 THEN 'LUAR'
+			 WHEN a.TYPE_BUAH = 3 THEN 'PLASMA'
+			 WHEN a.TYPE_BUAH = 4 THEN 'GROUP'
+			END AS TYPE_BUAH
+                from s_data_timbangan a
+                left join s_data_timbangan_detail b
+                    on b.ID_TIMBANGAN = a.ID_TIMBANGAN
+                where a.COMPANY_CODE = '".$company."' 
+                        and DATE_FORMAT(a.TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') and DATE_FORMAT('".$periode_to."','%Y%m%d')
+                        AND a.JENIS_MUATAN='TBS' -- and a.TYPE_BUAH=1";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function get_tbgluar_data($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query = "select a.ID_TIMBANGAN,a.NO_TIKET,a.NO_SPB, a.NO_KENDARAAN,a.TANGGALM,a.TANGGALK,
+                    a.BERAT_ISI,a.BERAT_KOSONG,a.BERAT_BERSIH AS BERAT_BERSIH, 
+                    a.SUPPLIERCODE , (a.GRD_LAINNYA/100)*(a.BERAT_ISI-a.BERAT_KOSONG) AS POTONGAN_KG , a.GRD_LAINNYA 
+                from s_data_timbangan a
+                where a.COMPANY_CODE = '".$company."' 
+                        and DATE_FORMAT(a.TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') and DATE_FORMAT('".$periode_to."','%Y%m%d')
+                        AND a.JENIS_MUATAN='TBS' and a.TYPE_BUAH=2 ORDER BY a.SUPPLIERCODE, a.TANGGALM ASC ";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function get_nabdist($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query = "SELECT notabuah.TANGGAL,notabuah.NO_TIKET, notabuah.NO_SPB, notabuah.NO_KENDARAAN,
+                        notabuah.AFD, notabuah.BLOCK, notabuah.JANJANG,
+                        timbangan.BERAT_REAL,timbangan.BERAT_BERSIH
+                FROM(SELECT nab.NO_TIKET,nab.NO_SPB,nab.NO_KENDARAAN,nab.TANGGAL,
+                        nabd.AFD,nabd.BLOCK,nabd.JANJANG
+                    FROM s_nota_angkutbuah nab
+                    INNER JOIN s_nota_angkutbuah_detail nabd on nabd.ID_NT_AB = nab.ID_NT_AB 
+                    WHERE nab.COMPANY_CODE = '".$company."' and nab.ACTIVE = 1 and 
+                                    DATE_FORMAT(nab.TANGGAL,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') and DATE_FORMAT('".$periode_to."','%Y%m%d')
+                    -- GROUP BY nabd.BLOCK
+                )notabuah
+                LEFT JOIN (
+                    SELECT tbg.NO_TIKET, tbg.NO_SPB,tbgd.AFD,tbgd.BLOCK, tbg.BERAT_ISI, tbg.BERAT_KOSONG, tbg.BERAT_BERSIH,
+                         tbgd.JANJANG,tbgd.BERAT_EMPIRIS,tbgd.BERAT_REAL
+                  FROM s_data_timbangan tbg
+                  LEFT JOIN s_data_timbangan_detail tbgd
+                  ON tbgd.ID_TIMBANGAN = tbg.ID_TIMBANGAN
+                  WHERE DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') and DATE_FORMAT('".$periode_to."','%Y%m%d')
+                    AND tbg.COMPANY_CODE ='".$company."' AND tbg.TYPE_BUAH =1 and tbg.JENIS_MUATAN='TBS'
+                    -- GROUP BY tbgd.BLOCK
+                )timbangan ON timbangan.NO_SPB = notabuah.NO_SPB and timbangan.NO_TIKET = notabuah.NO_TIKET
+                        and timbangan.BLOCK=notabuah.BLOCK
+                -- GROUP BY notabuah.BLOCK,timbangan.BLOCK";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function export_bjrttp($periode,$periode_to,$company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query = "SELECT BULAN, TAHUN, AFD, BLOCK, VALUE FROM s_data_bjr WHERE COMPANY_CODE='".$company."'";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function generate_lhm_produksi_tbs($periode,$periode_to,$company,$jns_barang){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        $jns_barang = $this->db->escape_str($jns_barang);
+        /*$query="SELECT s_data_timbangan.TANGGALM AS TANGGAL, s_data_timbangan.COMPANY_CODE,
+                              SUM(s_data_timbangan.BERAT_BERSIH) AS TBS_TERIMA,
+                              ((SUM(s_data_timbangan.BERAT_BERSIH)+RESTAN_MIN) - RESTAN_H) AS TBS_OLAH,
+                              (VOL_H-VOL_MIN)+VOL_DISPATCH AS PROD_CPO,
+                              ROUND(((VOL_H-VOL_MIN)+VOL_DISPATCH)/((SUM(BERAT_BERSIH)+RESTAN_MIN) - RESTAN_H),3) AS RENDEMEN,
+                              RESTAN_H AS RESTAN,FFA
+                     
+                FROM s_data_timbangan
+                LEFT JOIN(
+                           SELECT TANGGAL,COMPANY_CODE,RESTAN AS RESTAN_MIN
+                           FROM s_restan
+                            WHERE ACTIVE =1
+                )rest_min ON rest_min.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(rest_min.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))-1
+                LEFT JOIN (
+                           SELECT TANGGAL,COMPANY_CODE,RESTAN AS RESTAN_H
+                           FROM s_restan
+                           WHERE ACTIVE =1
+                )rest_h ON rest_h.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(rest_h.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+                LEFT JOIN (
+                       SELECT FFA,COMPANY_CODE,`DATE` 
+                       FROM s_ffa_prod 
+                        WHERE ACTIVE =1
+                )ffa ON ffa.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(ffa.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+                LEFT JOIN(
+                    SELECT SUM(snd.VOLUME)AS VOL_MIN,snd.COMPANY_CODE,`DATE` 
+                        FROM s_sounding snd
+                        WHERE snd.TYPE_S='1' AND snd.ACTIVE=1
+                           GROUP BY snd.DATE
+                )sounding_min ON sounding_min.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(sounding_min.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))-1
+                LEFT JOIN(
+                    SELECT SUM(snd.VOLUME)AS VOL_H,snd.COMPANY_CODE,`DATE` 
+                        FROM s_sounding snd
+                        WHERE snd.TYPE_S='1' AND snd.ACTIVE=1
+                           GROUP BY snd.DATE
+                )sounding_h ON sounding_h.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(sounding_h.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+                LEFT JOIN(
+                    SELECT BERAT_BERSIH AS VOL_DISPATCH,COMPANY_CODE,TANGGAL
+                    FROM s_dispatch
+                    WHERE s_dispatch.ACTIVE='1'
+                )dispatch ON dispatch.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                    AND DATE(DATE_FORMAT(dispatch.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))-1
+                    
+                WHERE s_data_timbangan.COMPANY_CODE='".$company."' 
+                    AND DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT('".$periode."','%Y%m%d') AND DATE_FORMAT('".$periode."','%Y%m%d')
+                        GROUP BY s_data_timbangan.TANGGALM, s_data_timbangan.COMPANY_CODE";*/
+        if (empty($periode_to)){
+            $periode_to = $periode;
+        }
+        $qSP ="CALL sp_tbg_gen_produksi_cpo(?, ?, ?, ?)";
+
+        $sQuery = $this->db->query($qSP,array($company,$periode,$periode_to,$jns_barang));
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;
+        
+    }
+    
+    function get_adem_sales(){
+        $config['hostname'] = "192.168.1.4";
+        $config['username'] = "adempiere";
+        $config['password'] = "adem5224878";
+        $config['database'] = "adempiere";
+        $config['dbdriver'] = "postgre";
+        $config['dbprefix'] = "";
+        $config['pconnect'] = FALSE;
+        $config['db_debug'] = TRUE;
+        $config['cache_on'] = FALSE;
+        $config['cachedir'] = "";
+        $config['char_set'] = "utf8";
+        $config['dbcollat'] = "utf8_general_ci";
+        $config['port'] = "5432";
+
+        $pgsql = $this->load->database($config, TRUE);
+        
+        /*
+            select i.documentno,i.movementdate,p.name Product,bp.name Customer,lo.value Gudang,
+            il.movementqty Tonase
+            from m_inoutline il
+            left join m_inout i on il.m_inout_id = i.m_inout_id
+            left join m_product p on il.m_product_id = p.m_product_id
+            left join c_bpartner bp on i.c_bpartner_id = bp.c_bpartner_id
+            left join m_locator lo on il.m_locator_id = lo.m_locator_id
+            where il.ad_org_id = 1000001
+            and i.issotrx = 'Y'
+            --and lo.value = 'Gd CPO1'
+        */
+        
+        $pgquery="select i.documentno,i.movementdate,p.name Product,bp.name Customer,lo.value Gudang,
+            il.movementqty Tonase
+            from m_inoutline il
+            left join m_inout i on il.m_inout_id = i.m_inout_id
+            left join m_product p on il.m_product_id = p.m_product_id
+            left join c_bpartner bp on i.c_bpartner_id = bp.c_bpartner_id
+            left join m_locator lo on il.m_locator_id = lo.m_locator_id
+            where il.ad_org_id = 1000001
+            and i.issotrx = 'Y'
+            --and lo.value = 'Gd CPO1";
+        
+        $pgquery2="select org.value PT, 
+                    oh.documentno,
+                    bp.value kode_customer,bp.name Customer,bpl.name Alamat,
+                     o.dateordered, p.name Produk, 
+                    o.qtyordered, o.qtydelivered
+                    from c_orderline o
+                    left join ad_org org on o.ad_org_id=org.ad_org_id
+                    left join c_bpartner bp on o.c_bpartner_id=bp.c_bpartner_id
+                    left join m_product p on o.m_product_id=p.m_product_id
+                    left join c_order oh on o.c_order_id = oh.c_order_id
+                    left join c_bpartner_location bpl on bp.c_bpartner_id = bpl.c_bpartner_id
+                    where oh.issotrx = 'Y'
+                    and (p.value = 'CPO' or p.value ='PK')";
+        $sQuery=$pgsql->query($pgquery);
+        $row = $sQuery->row();
+        
+        $value =$row->totaldr;
+        $pgsql->close();
+       // return $value;
+    }
+    
+    function generate_sounding($periode, $periode_to, $company){
+        $periode = $this->db->escape_str($periode);
+        $periode_to = $this->db->escape_str($periode_to);
+        $company = $this->db->escape_str($company);
+        
+        $query = "select DATE, TIME, ID_STORAGE, HEIGHT, TEMPERATURE, VOLUME, WEIGHT
+                     from s_sounding a 
+                    where a.COMPANY_CODE='".$company."' and a.DATE between date_format('".$periode."','%Y%m%d') and date_format('".$periode_to."','%Y%m%d')";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row )
+        {
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function get_max_stg_volume($company,$strg_code){
+        $company = $this->db->escape_str($company);
+        $strg_code = $this->db->escape_str($strg_code);
+        
+        $query = "select a.MAXCAPACITY from m_storage a where a.COMPANY_CODE='".$company."' and a.ID_STORAGE='".$strg_code."'";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [] = $row;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function get_vol_tanki($company,$strg_code,$periode){
+        $company = $this->db->escape_str($company);
+        $strg_code = $this->db->escape_str($strg_code);
+        $periode = $this->db->escape_str($periode);
+        
+        $query = "select a.DATE, a.VOLUME, a.TEMPERATURE, b.FFA 
+                from s_sounding a
+                LEFT JOIN s_ffa b on b.ID_STORAGE = a.ID_STORAGE AND
+                    DATE_FORMAT(b.DATE,'%Y%m%d') = DATE_FORMAT(a.DATE,'%Y%m%d')
+                    and b.COMPANY_CODE= a.COMPANY_CODE
+                where a.COMPANY_CODE='".$company."' 
+                and a.ID_STORAGE='".$strg_code."' and DATE_FORMAT(a.DATE,'%Y%m')='".$periode."' 
+                ORDER BY a.DATE ASC";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        $i=0;
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [$i] = $row;
+            $i++;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function get_produksi($company,$periode_awal,$periode_akhir){
+        $company = $this->db->escape_str($company);
+        //$periode_awal = $this->db->escape_str($periode_awal);
+        //$periode_akhir = $this->db->escape_str($periode_akhir);
+        /*
+        $query = "SELECT TANGGAL,TBS_TERIMA,
+            TBS_OLAH, PROD_CPO, PROD_KERNEL,
+            (PROD_CPO/TBS_OLAH)*100 AS RENDEMEN_CPO,
+            coalesce(RESTAN,0) as RESTAN
+            FROM(
+            SELECT s_data_timbangan.TANGGALM AS TANGGAL,        
+                        ROUND(CASE WHEN COALESCE(VOL_H,0) > 0 THEN    
+                            CASE WHEN COALESCE(VOL_MIN,0) = 0 THEN
+                            (
+                                COALESCE((COALESCE(VOL_H,0)+COALESCE(VOL_DISPATCH,0))-
+                                COALESCE((SELECT SUM(snd.WEIGHT) as WEIGHT
+                                    FROM s_sounding snd
+                                    WHERE snd.COMPANY_CODE='".$company."' and DATE_FORMAT(snd.DATE,'%Y%m%d') = DATE_FORMAT((SELECT MAX(DATE)-- and snd.ACTIVE =1
+                                        FROM s_sounding snd
+                                        WHERE snd.DATE < s_data_timbangan.TANGGALM and snd.COMPANY_CODE='".$company."' ),'%Y%m%d')GROUP BY snd.DATE),0),0)
+                            )
+                            WHEN COALESCE(VOL_MIN,0) > 0 THEN  
+                                COALESCE((COALESCE(VOL_H,0)+COALESCE(VOL_DISPATCH,0))-COALESCE(VOL_MIN,0),0)
+                            END
+                        WHEN COALESCE(VOL_H,0) = 0 THEN '0'
+                        END,-1) AS  PROD_CPO ,
+
+                        ROUND(((COALESCE(VOL_KERNEL,0) - COALESCE(VOL_KERNEL_MIN,0))+COALESCE(VOL_DISPATCH_KERNEL,0)),-1) AS PROD_KERNEL,
+                        COALESCE(SUM(s_data_timbangan.BERAT_BERSIH),0) as TBS_TERIMA,
+                        CASE WHEN COALESCE(VOL_H,0) > 0 THEN   
+                            CASE WHEN coalesce(RESTAN_MIN,0) = 0 THEN
+                                COALESCE(((
+                                    (CASE WHEN coalesce(VOL_MIN,0) = 0 THEN
+                                        coalesce(SUM(s_data_timbangan.BERAT_BERSIH),0)+COALESCE(TBS_PLASMA,0)+coalesce(NET_MIN,0)
+                                     WHEN COALESCE(VOL_MIN,0) > 0 THEN coalesce(SUM(s_data_timbangan.BERAT_BERSIH),0)+COALESCE(TBS_PLASMA,0)
+                                     END )+
+                                COALESCE((SELECT RESTAN AS RESTAN_MIN_COND 
+                                    FROM s_restan
+                                    WHERE ACTIVE=1 AND COMPANY_CODE='".$company."'
+                                    AND TANGGAL=DATE(DATE_FORMAT((SELECT MAX(TANGGAL) FROM s_restan
+                                                WHERE s_restan.TANGGAL < s_data_timbangan.TANGGALM AND s_restan.COMPANY_CODE='".$company."' 
+                                                GROUP BY s_restan.COMPANY_CODE),'%Y%m%d'))),0)) 
+                                - COALESCE(RESTAN_H,0)),0)    
+                            WHEN RESTAN_MIN > 0 THEN
+                                COALESCE(((
+                                (CASE WHEN COALESCE(VOL_MIN,0) = 0 THEN
+                                    -- coalesce(SUM(s_data_timbangan.BERAT_BERSIH),0)+coalesce(NET_MIN,0)
+                                    coalesce(SUM(s_data_timbangan.BERAT_BERSIH),0)+COALESCE(TBS_PLASMA,0)
+                                    WHEN COALESCE(VOL_MIN,0) > 0 THEN coalesce(SUM(s_data_timbangan.BERAT_BERSIH),0)+COALESCE(TBS_PLASMA,0)
+                                    END)+COALESCE(RESTAN_MIN,0)) - COALESCE(RESTAN_H,0)),0)
+                            end
+                        WHEN COALESCE(VOL_H,0) = 0 THEN '0'
+                        END AS TBS_OLAH,
+                        COALESCE(RESTAN_H,0) AS RESTAN
+                        
+            FROM s_data_timbangan
+            LEFT JOIN(
+                               SELECT TANGGAL,COMPANY_CODE,RESTAN AS RESTAN_MIN
+                               FROM s_restan
+                                WHERE s_restan.ACTIVE =1 AND s_restan.COMPANY_CODE='".$company."' 
+                        )rest_min ON rest_min.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(rest_min.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))-1
+            LEFT JOIN (
+                               SELECT TANGGAL,COMPANY_CODE,RESTAN AS RESTAN_H
+                               FROM s_restan
+                               WHERE s_restan.ACTIVE =1 AND s_restan.COMPANY_CODE='".$company."' 
+                        )rest_h ON rest_h.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(rest_h.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+            LEFT JOIN(
+                            SELECT SUM(snd.WEIGHT)AS VOL_MIN,snd.COMPANY_CODE,`DATE` 
+                            FROM s_sounding snd
+                            WHERE snd.TYPE_S='1' AND snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' 
+                               GROUP BY snd.DATE
+                        )sounding_min ON sounding_min.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(sounding_min.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))-1
+            LEFT JOIN(
+                            SELECT SUM(snd.WEIGHT)AS VOL_H,snd.COMPANY_CODE,`DATE`,ID_SOUNDING
+                            FROM s_sounding snd  
+                            WHERE snd.TYPE_S='1' AND snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' 
+                               GROUP BY snd.DATE
+                        )sounding_h ON sounding_h.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(sounding_h.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+            LEFT JOIN(
+                            SELECT coalesce(sum(BERAT_BERSIH),0) AS VOL_DISPATCH,COMPANY_CODE,TANGGALM
+                            FROM s_dispatch
+                            WHERE s_dispatch.ACTIVE='1' AND s_dispatch.COMPANY_CODE='".$company."' and 
+                                s_dispatch.ID_KOMODITAS = (
+                                    select ID_KOMODITAS from s_komoditas
+                                    where s_komoditas.COMPANY_CODE = '".$company."'
+                                        and s_komoditas.JENIS like 'CP%'
+                                )
+                            group by s_dispatch.TANGGALM
+                        )dispatch ON dispatch.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(dispatch.TANGGALM,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))    
+            LEFT JOIN (
+                        SELECT tbg1.TANGGALM, tbg1.COMPANY_CODE, sum(tbg1.BERAT_BERSIH) AS NET_MIN
+                        FROM s_data_timbangan tbg1
+                        WHERE tbg1.TYPE_BUAH=1 AND tbg1.TYPE_TIMBANG=1 AND tbg1.COMPANY_CODE='".$company."' 
+                            GROUP BY tbg1.TANGGALM, tbg1.COMPANY_CODE
+                    )tbg_min ON tbg_min.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(tbg_min.TANGGALM,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d')) -1
+            LEFT JOIN (
+                            SELECT TANGGALM AS TANGGAL,COMPANY_CODE, 
+                                COALESCE(SUM(s_data_timbangan.BERAT_BERSIH),0) AS TBS_PLASMA
+                            FROM s_data_timbangan
+                            WHERE s_data_timbangan.COMPANY_CODE='".$company."' 
+                                        -- AND DATE_FORMAT(TANGGALM,'%Y%m%d') BETWEEN DATE_FORMAT(from_periode,'%Y%m%d') AND DATE_FORMAT(to_periode,'%Y%m%d')
+                                        AND s_data_timbangan.TYPE_BUAH!=1 AND s_data_timbangan.TYPE_TIMBANG=1
+                                        and s_data_timbangan.JENIS_MUATAN='TBS'
+                                    GROUP BY s_data_timbangan.TANGGALM-- , s_data_timbangan.COMPANY_CODE 
+                    )produksi_plasma ON DATE_FORMAT(produksi_plasma.TANGGAL,'%Y%m%d') = DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d')
+                            AND produksi_plasma.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+            LEFT JOIN(
+                     SELECT SUM(sndk.WEIGHT)AS VOL_KERNEL, sndk.COMPANY_CODE, sndk.DATE, ID_SOUNDING_KERNEL,
+                        case when coalesce(VOL_KERNEL_MIN,0) = 0 then
+                            (
+                                SELECT SUM(sndk2.WEIGHT)AS VOL_KERNEL_MIN 
+                                 FROM s_sounding_kernel sndk2  
+                                 WHERE sndk2.ACTIVE=1 and sndk2.COMPANY_CODE='".$company."'
+                                    and sndk2.DATE = (
+                                        select max(DATE) from s_sounding_kernel
+                                        where ACTIVE=1 AND s_sounding_kernel.COMPANY_CODE='".$company."' 
+                                            and DATE_FORMAT(date,'%Y%m%d') < DATE_FORMAT(sndk.DATE,'%Y%m%d')
+                                    ) and sndk2.COMPANY_CODE = sndk.COMPANY_CODE
+                                    GROUP BY sndk2.DATE
+                            )
+                        when COALESCE(VOL_KERNEL_MIN,0) > 0 then VOL_KERNEL_MIN    
+                        end as VOL_KERNEL_MIN,VOL_DISPATCH_KERNEL
+                     FROM s_sounding_kernel sndk   
+                     left join(
+                        SELECT SUM(sndk1.WEIGHT)AS VOL_KERNEL_MIN, sndk1.COMPANY_CODE, sndk1.DATE 
+                         FROM s_sounding_kernel sndk1  
+                         WHERE sndk1.ACTIVE=1 AND sndk1.COMPANY_CODE='".$company."' 
+                            GROUP BY sndk1.DATE
+                     )sndk_min on sndk_min.COMPANY_CODE = sndk.COMPANY_CODE
+                        AND DATE(DATE_FORMAT(sndk_min.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(sndk.DATE,'%Y%m%d'))-1
+                     LEFT JOIN(
+                            SELECT COALESCE(sum(BERAT_BERSIH),0) AS VOL_DISPATCH_KERNEL,COMPANY_CODE,TANGGALM
+                            FROM s_dispatch
+                            WHERE s_dispatch.ACTIVE='1' AND s_dispatch.COMPANY_CODE='".$company."' AND 
+                                s_dispatch.ID_KOMODITAS = (
+                                    SELECT ID_KOMODITAS FROM s_komoditas
+                                    WHERE s_komoditas.COMPANY_CODE = '".$company."'
+                                        AND s_komoditas.JENIS LIKE 'KER%'
+                                )
+                            GROUP BY s_dispatch.TANGGALM
+                     )dispatch_kernel ON dispatch_kernel.COMPANY_CODE = sndk.COMPANY_CODE
+                            AND DATE(DATE_FORMAT(dispatch_kernel.TANGGALM,'%Y%m%d')) = DATE(DATE_FORMAT(sndk.DATE,'%Y%m%d'))
+                     WHERE sndk.ACTIVE=1 AND sndk.COMPANY_CODE='".$company."' 
+                        GROUP BY sndk.DATE
+                )produksi_kernel ON produksi_kernel.COMPANY_CODE = s_data_timbangan.COMPANY_CODE
+                AND DATE(DATE_FORMAT(produksi_kernel.DATE,'%Y%m%d')) = DATE(DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d'))
+            WHERE s_data_timbangan.COMPANY_CODE='".$company."' AND DATE_FORMAT(s_data_timbangan.TANGGALM,'%Y%m%d') BETWEEN 
+                                    DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+                        AND s_data_timbangan.TYPE_TIMBANG=1 AND s_data_timbangan.TYPE_BUAH=1
+                        AND s_data_timbangan.JENIS_MUATAN='TBS'
+            GROUP BY s_data_timbangan.TANGGALM, s_data_timbangan.COMPANY_CODE
+            )produksi_graph";
+			
+			$query ="SELECT s_ba.BA_DATE AS TANGGAL, (s_ba.FFB_INTI + s_ba.FFB_PLASMA + s_ba.FFB_SUPPLIER + s_ba.FFB_GROUP) AS TBS_TERIMA,
+s_ba.FFB_PROCESSED AS TBS_OLAH,
+prod_cpo.WEIGHT AS PROD_CPO,
+prod_kernel.WEIGHT AS PROD_KERNEL,
+COALESCE((prod_cpo.WEIGHT/s_ba.FFB_PROCESSED)*100,0) AS RENDEMEN_CPO, 
+s_ba.BALANCE AS RESTAN
+FROM s_ba
+LEFT JOIN (
+	SELECT prod.PRODUCTION_DATE, prod.WEIGHT FROM s_ba_production prod
+	INNER JOIN s_komoditas kom ON prod.ID_COMMODITY = kom.ID_KOMODITAS
+	WHERE prod.COMPANY_CODE = '".$company."'  AND prod.PRODUCTION_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+	AND kom.JENIS = 'CPO' AND prod.ACTIVE=1
+) prod_cpo ON s_ba.BA_DATE = prod_cpo.PRODUCTION_DATE 
+LEFT JOIN(
+	SELECT prod.PRODUCTION_DATE, prod.WEIGHT FROM s_ba_production prod
+	INNER JOIN s_komoditas kom ON prod.ID_COMMODITY = kom.ID_KOMODITAS
+	WHERE prod.COMPANY_CODE = '".$company."'  AND prod.PRODUCTION_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+	AND kom.JENIS = 'KERNEL' AND prod.ACTIVE=1
+) prod_kernel ON s_ba.BA_DATE = prod_kernel.PRODUCTION_DATE 
+WHERE s_ba.BA_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+AND s_ba.COMPANY_CODE = '".$company."' 
+ORDER BY s_ba.BA_DATE";
+*/
+$query ="SELECT s_ba.BA_DATE AS TANGGAL, (s_ba.FFB_INTI + s_ba.FFB_PLASMA + s_ba.FFB_SUPPLIER + s_ba.FFB_GROUP) AS TBS_TERIMA,
+s_ba.FFB_PROCESSED AS TBS_OLAH,
+prod_cpo.WEIGHT AS PROD_CPO,
+prod_kernel.WEIGHT AS PROD_KERNEL,
+COALESCE((prod_cpo.WEIGHT/s_ba.FFB_PROCESSED)*100,0) AS RENDEMEN_CPO, 
+COALESCE((prod_kernel.WEIGHT/s_ba.FFB_PROCESSED)*100,0) AS RENDEMEN_KERNEL,
+s_ba.BALANCE_YESTERDAY AS RESTAN
+FROM s_ba
+LEFT JOIN (
+	SELECT prod.PRODUCTION_DATE, prod.WEIGHT FROM s_ba_production prod
+	INNER JOIN s_komoditas kom ON prod.ID_COMMODITY = kom.ID_KOMODITAS
+	WHERE prod.COMPANY_CODE = '".$company."'  AND prod.PRODUCTION_DATE BETWEEN                                		
+	DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+	AND kom.JENIS = 'CPO' AND prod.ACTIVE=1
+) prod_cpo ON s_ba.BA_DATE = prod_cpo.PRODUCTION_DATE 
+LEFT JOIN(
+	SELECT prod.PRODUCTION_DATE, prod.WEIGHT FROM s_ba_production prod
+	INNER JOIN s_komoditas kom ON prod.ID_COMMODITY = kom.ID_KOMODITAS
+	WHERE prod.COMPANY_CODE = '".$company."'  AND prod.PRODUCTION_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+	AND kom.JENIS = 'KERNEL' AND prod.ACTIVE=1
+) prod_kernel ON s_ba.BA_DATE = prod_kernel.PRODUCTION_DATE 
+WHERE s_ba.BA_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d')
+AND s_ba.COMPANY_CODE = '".$company."' 
+ORDER BY s_ba.BA_DATE";
+			//var_dump($query);
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        $i=0;
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [$i] = $row;
+            $i++;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+	function get_produksi_all($periode_awal,$periode_akhir){
+        //$company = $this->db->escape_str($company);
+        //$periode_awal = $this->db->escape_str($periode_awal);
+        //$periode_akhir = $this->db->escape_str($periode_akhir);
+       
+		$query ="SELECT COALESCE(daily_production.TBS_TERIMA,0) AS TBS_TERIMA, 
+COALESCE(daily_production.TBS_OLAH,0) AS TBS_OLAH,
+COALESCE(daily_production.PROD_CPO,0) AS PROD_CPO,
+COALESCE(daily_production.PROD_KERNEL,0) AS PROD_KERNEL,
+COALESCE(daily_production.RENDEMEN_CPO,0) AS RENDEMEN_CPO,
+COALESCE(daily_production.RENDEMEN_KERNEL,0) AS RENDEMEN_KERNEL,
+c.COMPANY_CODE, c.COMPANY_NAME FROM m_company c 
+LEFT JOIN (
+	SELECT SUM((s_ba.FFB_INTI + s_ba.FFB_PLASMA + s_ba.FFB_SUPPLIER + s_ba.FFB_GROUP)) AS TBS_TERIMA, 
+	SUM(s_ba.FFB_PROCESSED) AS TBS_OLAH, SUM(prod_cpo.WEIGHT) AS PROD_CPO, SUM(prod_kernel.WEIGHT) AS PROD_KERNEL, 
+	COALESCE((SUM(prod_cpo.WEIGHT)/SUM(s_ba.FFB_PROCESSED))*100,0) AS RENDEMEN_CPO, 
+	COALESCE((SUM(prod_kernel.WEIGHT)/SUM(s_ba.FFB_PROCESSED))*100,0) AS RENDEMEN_KERNEL,
+	s_ba.COMPANY_CODE
+	FROM s_ba 
+	LEFT JOIN ( SELECT prod.PRODUCTION_DATE, prod.WEIGHT, prod.COMPANY_CODE FROM s_ba_production prod INNER JOIN s_komoditas kom ON prod.ID_COMMODITY = kom.ID_KOMODITAS WHERE prod.PRODUCTION_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d') AND kom.JENIS = 'CPO' AND prod.ACTIVE=1
+	) prod_cpo ON s_ba.BA_DATE = prod_cpo.PRODUCTION_DATE AND s_ba.COMPANY_CODE = prod_cpo.COMPANY_CODE 
+	LEFT JOIN( SELECT prod.PRODUCTION_DATE, prod.WEIGHT, prod.COMPANY_CODE FROM s_ba_production prod INNER JOIN s_komoditas kom ON prod.ID_COMMODITY = kom.ID_KOMODITAS WHERE prod.PRODUCTION_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d') AND kom.JENIS = 'KERNEL' AND prod.ACTIVE=1 
+	) prod_kernel ON s_ba.BA_DATE = prod_kernel.PRODUCTION_DATE AND s_ba.COMPANY_CODE = prod_kernel.COMPANY_CODE 
+	WHERE s_ba.BA_DATE BETWEEN DATE_FORMAT('".$periode_awal."','%Y%m%d') AND DATE_FORMAT('".$periode_akhir."','%Y%m%d') 
+	GROUP BY s_ba.COMPANY_CODE
+) daily_production ON c.COMPANY_CODE = daily_production.COMPANY_CODE 
+WHERE c.COMPANY_CODE IN ('GKM','LIH','MAG')";
+
+        $sQuery = $this->db->query($query);
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        $i=0;
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [$i] = $row;
+            $i++;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+	
+    function get_vol_dispatch($company,$year,$id_komoditas){
+        $company = $this->db->escape_str($company);
+        $id_komoditas = $this->db->escape_str($id_komoditas);
+        
+        $query = "select a.ID_KOMODITAS,a.JENIS, a.TANGGALM ,SUM(a.BERAT_BERSIH) AS VOL_DESPATCH  
+                    from s_dispatch a 
+                    where a.COMPANY_CODE='".$company."' and DATE_FORMAT(a.TANGGALM,'%Y')='".$year."' and a.ID_KOMODITAS='".$id_komoditas."'
+                    GROUP BY DATE_FORMAT(a.TANGGALM,'%Y%m')
+                    ORDER BY a.TANGGALM ASC";
+        $sQuery = $this->db->query($query);
+        
+        $temp = $sQuery->row_array();
+        $temp_result = array(); 
+        $i=0;
+        foreach ( $sQuery->result_array() as $row ){
+            $temp_result [$i] = $row;
+            $i++;
+        }
+
+        $this->db->close();
+        return $temp_result;    
+    }
+    
+    function LoadData_UnmatchNAB($periode,$company){
+        $limit = htmlentities($this->input->post('rows'),ENT_QUOTES,'UTF-8');
+        $page = htmlentities($this->input->post('page'),ENT_QUOTES,'UTF-8');
+        $sidx = htmlentities($this->input->post('sidx'),ENT_QUOTES,'UTF-8');
+        $sord = htmlentities($this->input->post('sord'),ENT_QUOTES,'UTF-8');
+        
+        $company = trim($this->db->escape_str($company));
+        
+        $queries ="select a.ID_NT_AB, a.NO_SPB,a.TANGGAL from s_nota_angkutbuah a 
+                    where a.COMPANY_CODE='".$company."' and DATE_FORMAT(a.TANGGAL,'%Y%m')='".$periode."'
+                                and a.NO_TIKET='-'";
+            
+        $sql2 = $queries;
+       
+        if(!$sidx) $sidx =1;
+        $query = $this->db->query($sql2);
+        $count = $query->num_rows(); 
+
+        if( $count >0 ) {
+            $total_pages = @(ceil($count/$limit));
+        } else {
+            $total_pages = 0;
+        }
+        if ($page > $total_pages)
+            $page=$total_pages;
+            
+        $start = $limit * $page - $limit;
+        if ($start > 0 ){
+            $start = $start;
+        } else {
+            $start = 0;
+        }
+        
+        $sql = $queries." ORDER BY ".$sidx." ".$sord." LIMIT ".$start.",".$limit." ";                                                      
+
+        $objects = $this->db->query($sql,FALSE)->result(); 
+        $rows =  array();
+
+        $act = "";
+        $no = 1;
+        foreach($objects as $obj)
+        {
+            $cell = array();
+            array_push($cell, $no);
+            array_push($cell, htmlentities($obj->ID_NT_AB,ENT_QUOTES,'UTF-8'));
+            array_push($cell, htmlentities($obj->NO_SPB,ENT_QUOTES,'UTF-8')); 
+            array_push($cell, htmlentities($obj->TANGGAL,ENT_QUOTES,'UTF-8'));
+            array_push($cell, htmlentities($act,ENT_QUOTES,'UTF-8'));
+            
+            $row = new stdClass();
+
+            $row->id = $cell[0];
+            $row->cell = $cell;
+            array_push($rows, $row);
+            $no++;
+        }
+
+        $jsonObject = new stdClass();
+        $jsonObject->page =  $page;
+        $jsonObject->total = $total_pages;
+        $jsonObject->records = $count;
+        $jsonObject->rows = $rows;      
+
+        return $jsonObject;
+    }
+	/*
+		get_janjang_shi added by Asep, 20130507		
+	*/
+	function get_janjang_shi($awal_bulan, $tanggal, $company, $block, $tabel){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT SUM(COALESCE(HSL_KERJA_VOLUME,0)) AS JANJANG_PANEN
+			FROM ".$tabel." mgad
+			WHERE DATE_FORMAT(LHM_DATE,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')
+			AND mgad.COMPANY_CODE = '".$company."'
+			AND mgad.LOCATION_CODE='".$block."'
+			AND ACTIVITY_CODE ='8601003'";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->JANJANG_PANEN;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	/*
+		get_berat_angkut_shi added by Asep, 20130507		
+	*/
+	function get_berat_angkut_shi($awal_bulan, $tanggal, $company, $block){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT  SUM(COALESCE(nabd.TONASE,0)) AS TONASE
+				FROM s_nota_angkutbuah nab
+				INNER JOIN s_nota_angkutbuah_detail nabd ON nab.ID_NT_AB = nabd.ID_NT_AB
+				WHERE nab.COMPANY_CODE='".$company."'
+				AND DATE_FORMAT(nabd.TANGGAL_PANEN,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')
+				-- AND nabd.TANGGAL_PANEN <= DATE_FORMAT('".$tanggal."','%Y%m%d')
+				AND nabd.BLOCK='".$block."'";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->TONASE;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	
+	/*
+		get_yield_angkut_shi added by Asep, 20130507		
+	*/
+	function get_yield_angkut_shi($awal_bulan, $tanggal, $company, $block){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT  (SUM(COALESCE(nabd.TONASE,0))/ filed_crop.HECTPLANTED) AS YIELD_ANGKUT
+				FROM s_nota_angkutbuah nab
+				INNER JOIN s_nota_angkutbuah_detail nabd ON nab.ID_NT_AB = nabd.ID_NT_AB
+				INNER JOIN (
+					SELECT f.FIELDCODE, f.HECTPLANTED, f.HECTPLANTABLE, f.TOTALHECTARAGE FROM m_fieldcrop f 
+					WHERE f.FIELDCODE='".$block."' AND f.INACTIVE=0 AND f.COMPANY_CODE='".$company."'
+				) filed_crop ON nabd.BLOCK = filed_crop.FIELDCODE
+				WHERE nab.COMPANY_CODE='".$company."'
+				AND DATE_FORMAT(nabd.TANGGAL_PANEN,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')
+				AND nabd.BLOCK='".$block."'";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->YIELD_ANGKUT;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	
+	/*
+		get_janjang_angkut_shi added by Asep, 20130507		
+	*/
+	function get_janjang_angkut_shi($awal_bulan, $tanggal, $company, $block){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT SUM(COALESCE(nabd.JANJANG,0)) AS JANJANG  -- nabd.TONASE 
+			FROM s_nota_angkutbuah nab
+			INNER JOIN s_nota_angkutbuah_detail nabd ON nab.ID_NT_AB = nabd.ID_NT_AB
+			WHERE nab.COMPANY_CODE='".$company."' 
+			AND DATE_FORMAT(nabd.TANGGAL_PANEN,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')			
+			AND nabd.BLOCK='".$block."'";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->JANJANG;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	/*
+		get_berat_panen_shi added by Asep, 20130507		
+	*/
+	function get_berat_panen_shi($awal_bulan, $tanggal, $company, $block, $tabel){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT SUM(data_panen_lhm.JANJANG_PANEN * COALESCE(data_nota_angkut.BJR_REAL,0)) AS BERAT_PANEN 
+FROM 		
+(
+			SELECT LHM_DATE AS TANGGAL_PANEN,LOCATION_CODE, SUM(COALESCE(HSL_KERJA_VOLUME,0)) AS JANJANG_PANEN 
+			FROM ".$tabel." mgad
+			WHERE 
+			DATE_FORMAT(LHM_DATE,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')			
+				AND mgad.COMPANY_CODE = '".$company."'
+				AND ACTIVITY_CODE ='8601003'
+				AND mgad.LOCATION_CODE = '".$block."'
+			GROUP BY LOCATION_CODE, LHM_DATE
+			) data_panen_lhm
+LEFT JOIN (
+			SELECT nabd.TANGGAL_PANEN, nabd.BLOCK AS LOCATION_CODE,  -- nabd.TONASE 
+			(SUM(COALESCE(nabd.TONASE,0))/SUM(COALESCE(nabd.JANJANG,0))) as BJR_REAL
+			FROM s_nota_angkutbuah nab
+			INNER JOIN s_nota_angkutbuah_detail nabd ON nab.ID_NT_AB = nabd.ID_NT_AB
+			WHERE nab.COMPANY_CODE='".$company."' 
+			AND DATE_FORMAT(TANGGAL_PANEN,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')
+			AND nabd.BLOCK='".$block."'
+			
+			GROUP BY nabd.BLOCK, nabd.TANGGAL_PANEN
+) data_nota_angkut ON data_panen_lhm.LOCATION_CODE = data_nota_angkut.LOCATION_CODE 
+						AND DATE_FORMAT(data_panen_lhm.TANGGAL_PANEN,'%Y%m%d')= DATE_FORMAT(data_nota_angkut.TANGGAL_PANEN,'%Y%m%d')
+";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->BERAT_PANEN;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	
+	/*
+		get_berat_panen_shi added by Asep, 20130507		
+	*/
+	function get_yield_panen_shi($awal_bulan, $tanggal, $company, $block, $tabel){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT (SUM(data_panen_lhm.JANJANG_PANEN * COALESCE(data_nota_angkut.BJR_REAL,0)) /field_crop.HECTPLANTED)  AS YIELD_PANEN 
+FROM(
+	SELECT f.FIELDCODE, f.HECTPLANTED, f.HECTPLANTABLE, f.TOTALHECTARAGE FROM m_fieldcrop f 
+	WHERE f.FIELDCODE='".$block."' AND f.INACTIVE=0 AND f.COMPANY_CODE='".$company."'
+) field_crop 
+INNER JOIN( 		
+			SELECT LHM_DATE AS TANGGAL_PANEN,LOCATION_CODE, SUM(COALESCE(HSL_KERJA_VOLUME,0)) AS JANJANG_PANEN 
+			FROM m_gang_activity_detail mgad
+			WHERE 
+				DATE_FORMAT(LHM_DATE,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')			
+				AND mgad.COMPANY_CODE = '".$company."'
+				AND ACTIVITY_CODE ='8601003'
+				AND mgad.LOCATION_CODE = '".$block."'
+			GROUP BY LOCATION_CODE, LHM_DATE
+) data_panen_lhm ON field_crop.FIELDCODE = data_panen_lhm.LOCATION_CODE  
+LEFT JOIN (
+			SELECT nabd.TANGGAL_PANEN, nabd.BLOCK AS LOCATION_CODE, 
+			(SUM(COALESCE(nabd.TONASE,0))/SUM(COALESCE(nabd.JANJANG,0))) as BJR_REAL
+			FROM s_nota_angkutbuah nab
+			INNER JOIN s_nota_angkutbuah_detail nabd ON nab.ID_NT_AB = nabd.ID_NT_AB
+			WHERE nab.COMPANY_CODE='".$company."' 
+			AND DATE_FORMAT(TANGGAL_PANEN,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."' ,'%Y%m%d') AND DATE_FORMAT('".$tanggal."' ,'%Y%m%d')
+			AND nabd.BLOCK='".$block."'			
+			GROUP BY nabd.BLOCK, nabd.TANGGAL_PANEN
+) data_nota_angkut ON data_panen_lhm.LOCATION_CODE = data_nota_angkut.LOCATION_CODE 
+						 AND DATE_FORMAT(data_panen_lhm.TANGGAL_PANEN,'%Y%m%d')= DATE_FORMAT(data_nota_angkut.TANGGAL_PANEN,'%Y%m%d')
+";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->YIELD_PANEN;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	/*
+		get_tbs_terima_shi added by Asep, 20130507		
+	*/
+	function get_tbs_terima_shi($awal_bulan, $tanggal, $company, $jenis_muatan){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT SUM(T.BERAT_BERSIH) AS TBS_TERIMA 
+				FROM s_data_timbangan T			
+				WHERE T.COMPANY_CODE='".$company."' 
+				AND DATE_FORMAT(T.TANGGALM ,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."','%Y%m%d') AND DATE_FORMAT('".$tanggal."','%Y%m%d')
+				AND T.JENIS_MUATAN= '".$jenis_muatan."'";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->TBS_TERIMA;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	/*
+		get_tbs_olah_shi added by Asep, 20130507		
+	*/
+	function get_tbs_olah_shi($awal_bulan, $tanggal, $company, $jenis_muatan){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT SUM((COALESCE(data_timbangan.TBS_TERIMA,0)+ COALESCE(data_restan1.RESTAN1,0)) - COALESCE(data_restan.RESTAN,0)) AS TBS_OLAH			
+		FROM 			
+		(		
+			SELECT T.TANGGALM AS TANGGAL,
+			SUM(T.BERAT_BERSIH) AS TBS_TERIMA					    
+			FROM s_data_timbangan T			
+			WHERE T.COMPANY_CODE='".$company."' 
+			AND DATE_FORMAT(T.TANGGALM ,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."','%Y%m%d') AND DATE_FORMAT('".$tanggal."','%Y%m%d') 
+			AND T.JENIS_MUATAN= '".$jenis_muatan."'
+			GROUP BY T.TANGGALM, T.COMPANY_CODE
+		) data_timbangan
+		LEFT JOIN(
+			SELECT R.TANGGAL, R.RESTAN AS RESTAN
+			FROM s_restan R
+			WHERE R.ACTIVE =1 AND R.COMPANY_CODE='".$company."' 
+		)data_restan ON DATE(DATE_FORMAT(data_timbangan.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(data_restan.TANGGAL,'%Y%m%d'))	
+		LEFT JOIN(
+			SELECT DATE(DATE_FORMAT(R.TANGGAL + INTERVAL 1 DAY,'%Y%m%d'))  AS TANGGAL1, R.COMPANY_CODE, R.RESTAN AS RESTAN1
+			FROM s_restan R
+			WHERE R.ACTIVE =1 AND R.COMPANY_CODE='".$company."' 
+		)data_restan1 ON DATE(DATE_FORMAT(data_timbangan.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(data_restan1.TANGGAL1,'%Y%m%d'))";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->TBS_OLAH;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	/*
+		get_prod_cpo_shi added by Asep, 20130507		
+	*/
+	function get_prod_cpo_shi($awal_bulan, $tanggal, $company){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT  SUM(coalesce((WEIGHT0 - WEIGHT1) + coalesce(VOL_DISPATCH,0),0)) AS PROD 			
+					FROM
+					(	
+						SELECT DATE(DATE_FORMAT(TANGGAL0 - INTERVAL 1 DAY,'%Y%m%d')) AS TANGGAL_PRODUKSI, TANGGAL0, SUM(WEIGHT0) AS WEIGHT0, 
+								SUM(CASE WHEN coalesce(SOUNDING1.WEIGHT1,0) = 0  THEN (
+									SELECT snd2.WEIGHT as WEIGHT
+									FROM s_sounding snd2
+									WHERE snd2.COMPANY_CODE='".$company."' 
+									AND DATE_FORMAT(snd2.DATE,'%Y%m%d') = DATE_FORMAT((SELECT MAX(DATE)
+																						FROM s_sounding snd1
+																						WHERE snd1.DATE < DATE_FORMAT(TANGGAL0,'%Y%m%d') and snd1.COMPANY_CODE='".$company."'
+																						AND snd1.ACTIVE=1 AND snd1.ID_STORAGE=SOUNDING0.ID_STORAGE),'%Y%m%d') 
+								   AND snd2.ID_STORAGE = SOUNDING0.ID_STORAGE						
+								)ELSE SOUNDING1.WEIGHT1 END) AS WEIGHT1
+						FROM
+						(
+							SELECT snd.WEIGHT AS WEIGHT0, `DATE` AS TANGGAL0, strg.STORAGE_NUM AS STORAGE_NUM0, snd.ID_STORAGE 
+							FROM s_sounding snd 
+							LEFT JOIN m_storage strg ON snd.ID_STORAGE = strg.ID_STORAGE 
+							WHERE snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' AND strg.STORAGE_NUM =1 
+						) SOUNDING0 
+						LEFT JOIN (
+							SELECT snd.WEIGHT AS WEIGHT1, strg.STORAGE_NUM AS STORAGE_NUM1,
+							DATE(DATE_FORMAT(snd.DATE + INTERVAL 1 DAY,'%Y%m%d'))  AS TANGGAL1
+							FROM s_sounding snd 
+							LEFT JOIN m_storage strg ON snd.ID_STORAGE = strg.ID_STORAGE  
+							WHERE snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' AND strg.STORAGE_NUM =1  
+						) SOUNDING1 ON SOUNDING0.TANGGAL0 = SOUNDING1.TANGGAL1 AND SOUNDING0.STORAGE_NUM0 = SOUNDING1.STORAGE_NUM1 
+						GROUP BY TANGGAL_PRODUKSI
+					) AS data_sounding
+					LEFT JOIN (
+						SELECT SUM(BERAT_BERSIH) AS VOL_DISPATCH, DATE(DATE_FORMAT(TANGGALM + INTERVAL 1 DAY,'%Y%m%d'))  AS TANGGAL_S1 
+						FROM s_dispatch
+						WHERE s_dispatch.ACTIVE='1' 
+						AND s_dispatch.COMPANY_CODE='".$company."' 
+						AND s_dispatch.ID_KOMODITAS = (
+												SELECT ID_KOMODITAS FROM s_komoditas
+												WHERE s_komoditas.COMPANY_CODE = '".$company."'
+												AND s_komoditas.JENIS LIKE 'CP%'
+											)
+						GROUP BY s_dispatch.TANGGALM
+					)DISPATCH ON data_sounding.TANGGAL0 = DISPATCH.TANGGAL_S1
+					WHERE 
+					DATE_FORMAT(TANGGAL_PRODUKSI ,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."','%Y%m%d') AND DATE_FORMAT('".$tanggal."','%Y%m%d')";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->PROD;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+	/*
+		get_rendemen_shi added by Asep, 20130507		
+	*/
+	function get_rendemen_shi($awal_bulan, $tanggal, $company, $jenis_muatan){
+        $company = $this->db->escape_str($company);
+        //$query="SELECT PERIODE_USED FROM s_data_bjr WHERE COMPANY_CODE ='".$company."'";
+		$query="SELECT SUM(COALESCE(((PROD/TBS_OLAH) * 100),0)) AS RENDEMEN
+		FROM(
+			SELECT data_timbangan.TANGGAL, 
+					((COALESCE(data_timbangan.TBS_TERIMA,0)+ COALESCE(data_restan1.RESTAN1,0)) - COALESCE(data_restan.RESTAN,0)) AS TBS_OLAH			
+					FROM 			
+					(		
+							SELECT T.TANGGALM AS TANGGAL,
+							SUM(T.BERAT_BERSIH) AS TBS_TERIMA					    
+							FROM s_data_timbangan T			
+							WHERE T.COMPANY_CODE='".$company."' 
+							AND DATE_FORMAT(T.TANGGALM ,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."','%Y%m%d') AND DATE_FORMAT('".$tanggal."','%Y%m%d') 									
+							AND T.JENIS_MUATAN= '".$jenis_muatan."'
+							GROUP BY T.TANGGALM, T.COMPANY_CODE
+					) data_timbangan
+					LEFT JOIN(
+							SELECT R.TANGGAL, R.RESTAN AS RESTAN
+							FROM s_restan R
+							WHERE R.ACTIVE =1 AND R.COMPANY_CODE='".$company."' 
+					)data_restan ON DATE(DATE_FORMAT(data_timbangan.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(data_restan.TANGGAL,'%Y%m%d'))						
+					LEFT JOIN(
+						SELECT DATE(DATE_FORMAT(R.TANGGAL + INTERVAL 1 DAY,'%Y%m%d'))  AS TANGGAL1, R.RESTAN AS RESTAN1
+						FROM s_restan R
+						WHERE R.ACTIVE =1 AND R.COMPANY_CODE='".$company."' 
+					)data_restan1 ON DATE(DATE_FORMAT(data_timbangan.TANGGAL,'%Y%m%d')) = DATE(DATE_FORMAT(data_restan1.TANGGAL1,'%Y%m%d')) 
+		) data_kebun 
+		LEFT JOIN(
+			SELECT TANGGAL_PRODUKSI AS TANGGAL,
+			coalesce(WEIGHT0,0) AS WEIGHT0, coalesce(WEIGHT1,0) AS WEIGHT1, coalesce(VOL_DISPATCH,0) AS VOL_DISPATCH1  
+					, coalesce((WEIGHT0 - WEIGHT1) + coalesce(VOL_DISPATCH,0),0) AS PROD 			
+					FROM
+					(	
+						SELECT DATE(DATE_FORMAT(TANGGAL0 - INTERVAL 1 DAY,'%Y%m%d')) AS TANGGAL_PRODUKSI, TANGGAL0, SUM(WEIGHT0) AS WEIGHT0, 
+								SUM(CASE WHEN coalesce(SOUNDING1.WEIGHT1,0) = 0  THEN (
+									SELECT snd2.WEIGHT as WEIGHT
+									FROM s_sounding snd2
+									WHERE snd2.COMPANY_CODE='".$company."' 
+									AND DATE_FORMAT(snd2.DATE,'%Y%m%d') = DATE_FORMAT((SELECT MAX(DATE)
+																						FROM s_sounding snd1
+																						WHERE snd1.DATE < DATE_FORMAT(TANGGAL0,'%Y%m%d') and snd1.COMPANY_CODE='".$company."'
+																						AND snd1.ACTIVE=1 AND snd1.ID_STORAGE=SOUNDING0.ID_STORAGE),'%Y%m%d') 
+								   AND snd2.ID_STORAGE = SOUNDING0.ID_STORAGE						
+								)ELSE SOUNDING1.WEIGHT1 END) AS WEIGHT1
+						FROM
+						(
+							SELECT snd.WEIGHT AS WEIGHT0 ,`DATE` AS TANGGAL0, strg.STORAGE_NUM AS STORAGE_NUM0, snd.ID_STORAGE 
+							FROM s_sounding snd 
+							LEFT JOIN m_storage strg ON snd.ID_STORAGE = strg.ID_STORAGE 
+							WHERE snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' AND strg.STORAGE_NUM =1 
+						) SOUNDING0 
+						LEFT JOIN (
+							SELECT snd.WEIGHT AS WEIGHT1, strg.STORAGE_NUM AS STORAGE_NUM1,
+							DATE(DATE_FORMAT(snd.DATE + INTERVAL 1 DAY,'%Y%m%d'))  AS TANGGAL1
+							FROM s_sounding snd 
+							LEFT JOIN m_storage strg ON snd.ID_STORAGE = strg.ID_STORAGE  
+							WHERE snd.ACTIVE=1 AND snd.COMPANY_CODE='".$company."' AND strg.STORAGE_NUM =1  
+						) SOUNDING1 ON SOUNDING0.TANGGAL0 = SOUNDING1.TANGGAL1 AND SOUNDING0.STORAGE_NUM0 = SOUNDING1.STORAGE_NUM1 
+						GROUP BY TANGGAL_PRODUKSI
+					) AS data_sounding
+					LEFT JOIN (
+						SELECT SUM(BERAT_BERSIH) AS VOL_DISPATCH
+						,DATE(DATE_FORMAT(TANGGALM + INTERVAL 1 DAY,'%Y%m%d'))  AS TANGGAL_S1 
+						FROM s_dispatch
+						WHERE s_dispatch.ACTIVE='1' 
+						AND s_dispatch.COMPANY_CODE='".$company."' 
+						AND s_dispatch.ID_KOMODITAS = (
+												SELECT ID_KOMODITAS FROM s_komoditas
+												WHERE s_komoditas.COMPANY_CODE = '".$company."'
+												AND s_komoditas.JENIS LIKE 'CP%'
+											)
+						GROUP BY s_dispatch.TANGGALM
+					)DISPATCH ON data_sounding.TANGGAL0 = DISPATCH.TANGGAL_S1
+					WHERE 
+					DATE_FORMAT(TANGGAL_PRODUKSI ,'%Y%m%d') BETWEEN DATE_FORMAT('".$awal_bulan."','%Y%m%d') AND DATE_FORMAT('".$tanggal."','%Y%m%d')					
+		) data_produksi ON data_kebun.TANGGAL = data_produksi.TANGGAL";
+        $sQuery = $this->db->query($query);
+        $value='';
+        if($sQuery->num_rows() > 0){
+            $row = $sQuery->row(); 
+            $value = $row->RENDEMEN;    
+        }else{
+            $value = '<span style="color: #FF0000; font-weight: bold;"><em>BJR NOT SET</em></span>';   
+        } 
+        return $value;  
+    }
+}
+?>

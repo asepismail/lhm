@@ -1,0 +1,6 @@
+2012-06-20
+- m_usergroup : tambah ID : USER_GROUP_TID, untuk indexing user group
+
+2013-04-19
+- validasi buku kontraktor : p_kontraktor, model_p_kontraktor, info_p_kontraktor, Library : global_func, Jquery : prov_jqgrid ( perbaiki bug untuk perbaikan method setgrid )
+- Ubah template LHM : Public ( Tambah themes_tiga ), js/menu, themes/base/ui_custom.css,

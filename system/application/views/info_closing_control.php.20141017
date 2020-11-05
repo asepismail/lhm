@@ -1,0 +1,424 @@
+<? 
+    $template_path = base_url().$this->config->item('template_path');  
+	$session = $this->session->userdata('LOGINID');
+?>   
+<script type="text/javascript">
+var url = "<?= base_url().'index.php//' ?>"; 
+var gridimgpath = '<?= $template_path ?>themes/base/images';
+var company = "<?=$company_code ?>";
+$(function() {  $( "#tabs" ).tabs();  });
+jQuery(document).ready(function(){
+	
+	/* onChange dropdown year */
+	$("#sTahun").change(function() { 
+		  var vurls = "";
+		  var svTahun = document.getElementById("sTahun").value;
+		  var svCompany = document.getElementById("i_company").value;
+		  vurls = "m_closing_control/search_period/"+svTahun+"/"+ svCompany;
+		  /* if(svCompany != ""){
+			  vurls += "/"+ svCompany;
+		  } */
+		  jQuery("#list_period").setGridParam({url:"m_closing_control/search_period/"+svTahun+"/"+ svCompany }).trigger("reloadGrid");	
+	});	
+	
+	$("#i_company").change(function() { 
+		  var vurls = "";
+		  var svTahun = document.getElementById("sTahun").value;
+		  var svCompany = document.getElementById("i_company").value;
+		  vurls = "m_closing_control/search_period/"+svTahun+"/"+ svCompany;
+		  /* if(svCompany != ""){
+			  vurls += "/"+svCompany;
+		  } */
+		  jQuery("#list_period").setGridParam({url:"m_closing_control/search_period/"+svTahun+"/"+ svCompany}).trigger("reloadGrid");	
+	});	
+	/* end drop year */
+
+	$("#inputPeriod").dialog({
+			bgiframe: true, autoOpen: false, resizable: true, draggable: true,
+			closeOnEscape:false, height: 280, width: 350, modal: true,buttons: { 
+			'Tutup	': function(){
+				$("#inputPeriod").dialog("close");
+				initFormPeriod();
+			}, 'Ubah Periode': function(){
+				submitPeriod("ubah");
+			}
+		}
+	}); 
+	
+	$("#inputPControl").dialog({
+			bgiframe: true, autoOpen: false, resizable: true, draggable: true,
+			closeOnEscape:false, height: 300, width: 350, modal: true,buttons: { 
+			'Tutup	': function(){
+				$("#inputPControl").dialog("close");
+				initFormRole();
+			}, 'Ubah Period Control': function(){
+				submitPControl("", "ubah")
+			}
+		}
+	}); 
+});
+
+/* Grid User Group*/
+var jGrid_Period = null;
+var colNamesT_Period = new Array();
+var colModelT_Period = new Array();
+
+colNamesT_Period.push('Period ID');
+colModelT_Period.push({name:'PERIODE_ID',index:'PERIODE_ID', hidden:true, width: 60, align:'center'});
+
+colNamesT_Period.push('Perusahaan');
+colModelT_Period.push({name:'COMPANY_CODE',index:'COMPANY_CODE', hidden:false, width: 80, align:'center'});
+	
+colNamesT_Period.push('Period Name');
+colModelT_Period.push({name:'PERIODE_NAME',index:'PERIODE_NAME', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+	
+colNamesT_Period.push('Start');
+colModelT_Period.push({name:'PERIODE_START',index:'PERIODE_START', hidden:false, width: 100, align:'center'});
+
+colNamesT_Period.push('End');
+colModelT_Period.push({name:'PERIODE_END',index:'PERIODE_END', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+	
+colNamesT_Period.push('Is Close');
+colModelT_Period.push({name:'ISCLOSE',index:'ISCLOSE', hidden:false, editable: false, edittype:'checkbox', editoptions: { value:"1:0"}, 
+  formatter: "checkbox", formatoptions: {disabled : true}, width: 100, align:'center'});
+
+colNamesT_Period.push('Close By');
+colModelT_Period.push({name:'CLOSE_BY',index:'CLOSE_BY', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+
+colNamesT_Period.push('Close Date');
+colModelT_Period.push({name:'CLOSE_DATE',index:'CLOSE_DATE', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+
+colNamesT_Period.push('Reopen By');
+colModelT_Period.push({name:'REOPEN_BY',index:'REOPEN_BY', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+
+colNamesT_Period.push('Reopen Date');
+colModelT_Period.push({Reopen:'REOPEN_DATE',index:'REOPEN_DATE', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+					  
+colNamesT_Period.push('Action');
+colModelT_Period.push({name:'act',index:'act', editable:false, hidden:false, width:100, align:'center'});
+
+
+var lastsel; var jdesc1;
+var lRow; var lCol; var i = 0;
+var loadView_period = function(){
+jGrid_Period = jQuery("#list_period").jqGrid({
+     url:'m_closing_control/search_period/'+document.getElementById("sTahun").value,
+     mtype : "POST", datatype: "json",
+     colNames: colNamesT_Period , colModel: colModelT_Period ,
+     rownumbers:true, viewrecords: true, multiselect: false, 
+     rowNum:20, height: 300, rowList:[10,20,30], imgpath: gridimgpath, rownumbers:true,
+     pager: jQuery('#pager_period'), sortname: colModelT_Period[2].name, sortorder: "asc", viewrecords: true,
+     caption:"CLOSING PERIOD LIST",
+	 onSelectRow: function(){
+		var id = jQuery("#list_period").getGridParam('selrow');
+		var data = $("#list_period").getRowData(id) ;
+		var idgroup = data.PERIODE_ID; 		
+		var idcompany = data.COMPANY_CODE;
+		$("#menulist_id").val(data.PERIODE_ID);
+		jQuery("#list_pControl").setGridParam({url:"m_closing_control/search_pControl/"+idgroup+"/"+idcompany}).trigger("reloadGrid");	
+	 }, loadComplete: function(){ 
+        	var ids = jQuery("#list_period").getDataIDs(); 
+        	for(var i=0;i<ids.length;i++) { 
+             	var cl = ids[i];
+             	ce = "<a href='#' onclick=\"viewPeriod('"+cl+"');\"/ style='cursor:pointer'>Open/Close</a>";
+             	jQuery("#list_period").setRowData(ids[i],{act:ce}) 
+         	}
+     }, imgpath: gridimgpath, pager: jQuery('#pager_period'), sortname: colModelT_Period[0].name
+  });
+  jGrid_Period.navGrid('#pager_period',{edit:false,add:false,del:false, search: true, refresh: true});
+  
+}
+jQuery("#list_period").ready(loadView_period);
+
+function reloadGridPeriode(){
+	jQuery("#list_pControl").setGridParam({url:"m_closing_control/search_pControl/"+idgroup}).trigger("reloadGrid");	
+}
+
+
+function submitPControl(id, method){
+	var postdata={};
+	postdata['PERIODE_CONTROL_ID'] = $("#i_pControlid").val() ;
+	/*
+	postdata['PERIODE_ID'] = $("#i_pControl").val(); 
+	postdata['PERIODE_NAME'] = $("#i_pControlname").val();
+	postdata['PERIODE_START'] = $("#i_pControlStart").val();
+	postdata['PERIODE_END'] = $("#i_pControlEnd").val();
+	postdata['MODULE'] = $("#i_pControlModule").val();
+	*/
+	var isActive = document.getElementById('i_pControlIsClose').checked;
+	if(isActive==true) {
+		isActive=1;
+	} else {
+		isActive=0;
+	}
+   	postdata['ISCLOSE'] = isActive;
+	/*
+	postdata['CLOSE_BY'] = $("#i_pControlCloseBy").val();
+	postdata['CLOSE_DATE'] = $("#i_pControlCloseDate").val();
+	postdata['REOPEN_BY'] = $("#i_pControlReopenBy").val();
+	postdata['REOPEN_DATE'] = $("#i_pControlReopenDate").val();
+	*/
+	urls = "m_closing_control/updatePeriodControl/"+id;
+	$.post(urls, postdata, function(status) {
+		var status = new String(status);
+		if(status.replace(/\s/g,"") != "") { 
+			alert(status); 
+		} else { 
+			jQuery("#list_pControl").setGridParam({url:'m_closing_control/search_pControl/'+$("#i_pControl").val()}).trigger("reloadGrid");
+			//if(method == "simpan"){
+			//	alert('data berhasil tersimpan.');
+			//} 
+			//initFormRole();        
+			//$("#inputGroupRole").dialog("close");
+		}  
+	});
+}
+
+function submitPeriod(method){
+	var postdata={};
+		postdata['PERIODE_ID'] = $("#i_periodid").val() ;
+		postdata['PERIODE_NAME'] = $("#i_periodname").val(); 
+		postdata['PERIODE_START'] = $("#i_start").val(); 
+		postdata['PERIODE_END'] = $("#i_end").val();		
+		var isActive = document.getElementById('i_isClose').checked;
+		if(isActive==true) {
+			isActive=1;
+		} else {
+			isActive=0;
+		}
+    	postdata['ISCLOSE'] = isActive;
+		
+		urls = "m_closing_control/updateDataPeriod/"+$("#i_periodid").val();
+		
+		$.post(urls, postdata, function(status) {
+			var status = new String(status);
+			if(status.replace(/\s/g,"") != "") { 
+			   alert(status); 
+			} else { 
+			   jQuery("#list_period").setGridParam({url:'m_closing_control/search_period/'}).trigger("reloadGrid");									
+			   alert('data berhasil terupdate.');
+			   initFormPeriod();        
+			   $("#inputPeriod").dialog("close");
+			};  
+		});
+}
+
+function viewPeriod(ids){
+	var ids = jQuery("#list_period").getGridParam('selrow'); 	
+	var data = $("#list_period").getRowData(ids) ; 
+	if (ids!=null ){
+		initFormPeriod();
+		$("#inputPeriod").dialog("open");
+		$(":button:contains('Ubah Periode')").show();
+		//$(":button:contains('Hapus Periode')").show();
+		//$(":button:contains('Simpan Group')").hide();
+		$("#i_periodid").attr('disabled','true');
+		$("#i_periodid").val(data.PERIODE_ID);
+		$("#i_periodname").attr('disabled','true');
+		$("#i_periodname").val(data.PERIODE_NAME);
+		$("#i_start").attr('disabled','true');
+		$("#i_start").val(data.PERIODE_START);
+		$("#i_end").attr('disabled','true');
+		$("#i_end").val(data.PERIODE_END);
+		var isActive = data.ISCLOSE;
+		if (isActive==1) {
+            $("#i_isClose").attr('checked',true);
+        } else {
+            $("#i_isClose").attr('checked',false);    
+        }
+		$("#i_closeBy").attr('disabled','true');
+		$("#i_closeBy").val(data.CLOSE_BY);
+		$("#i_closeDate").attr('disabled','true');
+		$("#i_closeDate").val(data.CLOSE_DATE);
+		$("#i_reopenBy").attr('disabled','true');
+		$("#i_reopenBy").val(data.REOPEN_BY);
+		$("#i_reopenDate").attr('disabled','true');
+		$("#i_reopenDate").val(data.REOPEN_DATE);
+	} else {
+		alert("harap pilih data untuk di edit");
+	}                
+}
+
+function viewPControl(ids){
+	var ids = jQuery("#list_pControl").getGridParam('selrow'); 	
+	var data = $("#list_pControl").getRowData(ids) ; 
+	if (ids!=null ){
+		initFormPeriod();
+		$("#inputPControl").dialog("open");
+		$(":button:contains('Ubah Periode')").show();		
+		$("#i_pControlid").attr('disabled','true');
+		$("#i_pControlid").val(data.PERIODE_CONTROL_ID);
+		$("#i_pControl").attr('disabled','true');
+		$("#i_pControl").val(data.PERIODE_ID);
+		$("#i_pControlname").attr('disabled','true');
+		$("#i_pControlname").val(data.PERIODE_NAME);
+		$("#i_pControlStart").attr('disabled','true');
+		$("#i_pControlStart").val(data.PERIODE_START);
+		$("#i_pControlEnd").attr('disabled','true');
+		$("#i_pControlEnd").val(data.PERIODE_END);
+		$("#i_pControlModule").attr('disabled','true');
+		$("#i_pControlModule").val(data.MODULE);
+		var isActive = data.ISCLOSE;
+		if (isActive==1) {
+            $("#i_pControlIsClose").attr('checked',true);
+        } else {
+            $("#i_pControlIsClose").attr('checked',false);    
+        }
+		$("#i_pControlCloseBy").attr('disabled','true');
+		$("#i_pControlCloseBy").val(data.CLOSE_BY);
+		$("#i_pControlCloseDate").attr('disabled','true');
+		$("#i_pControlCloseDate").val(data.CLOSE_DATE);
+		$("#i_pControlReopenBy").attr('disabled','true');
+		$("#i_pControlReopenBy").val(data.REOPEN_BY);
+		$("#i_pControlReopenDate").attr('disabled','true');
+		$("#i_pControlReopenDate").val(data.REOPEN_DATE);
+		
+	} else {
+		alert("harap pilih data untuk di edit");
+	}                
+}
+
+function initFormPeriod(){
+	 $("#i_groupid").val("") ; $("#i_groupname").val("") ;
+}
+
+/* Grid User Group Role*/
+var jGrid_pControl = null;
+var colNamesT_pControl = new Array();
+var colModelT_pControl= new Array();
+	
+colNamesT_pControl.push('ID');
+colModelT_pControl.push({name:'PERIODE_CONTROL_ID',index:'PERIODE_CONTROL_ID', hidden:true, width: 60, align:'center'});
+
+colNamesT_pControl.push('PERIODE_ID');
+colModelT_pControl.push({name:'PERIODE_ID',index:'PERIODE_ID', hidden:true, width: 60, align:'center'});
+
+	
+colNamesT_pControl.push('Period Name');
+colModelT_pControl.push({name:'PERIODE_NAME',index:'PERIODE_NAME', editable: false, hidden:false, 
+					  width: 100, align:'center'});
+	
+colNamesT_pControl.push('Start');
+colModelT_pControl.push({name:'PERIODE_START',index:'PERIODE_START', hidden:false, width: 80, align:'center'});
+
+colNamesT_pControl.push('End');
+colModelT_pControl.push({name:'PERIODE_END',index:'PERIODE_END', editable: false, hidden:false, 
+					  width: 80, align:'left'});
+	
+colNamesT_pControl.push('Module');
+colModelT_pControl.push({name:'MODULE',index:'MODULE', hidden:false, width: 80, align:'left'});
+
+colNamesT_pControl.push('Is Close');
+colModelT_pControl.push({name:'ISCLOSE',index:'ISCLOSE', hidden:false, editable: true, edittype:'checkbox', editoptions: { value:"1:0"}, 
+  formatter: "checkbox", formatoptions: {disabled : false}, width: 100, align:'center'});
+
+colNamesT_pControl.push('Close By');
+colModelT_pControl.push({name:'CLOSE_BY',index:'CLOSE_BY', editable: false, hidden:false, 
+					  width: 80, align:'left'});
+
+colNamesT_pControl.push('Close Date');
+colModelT_pControl.push({name:'CLOSE_DATE',index:'CLOSE_DATE', editable: false, hidden:false, 
+					  width: 80, align:'left'});
+
+colNamesT_pControl.push('Reopen By');
+colModelT_pControl.push({name:'REOPEN_BY',index:'REOPEN_BY', editable: false, hidden:false, 
+					  width: 80, align:'left'});
+
+colNamesT_pControl.push('Reopen Date');
+colModelT_pControl.push({name:'REOPEN_DATE',index:'REOPEN_DATE', editable: false, hidden:false, 
+					  width: 80, align:'left'});
+
+colNamesT_pControl.push('Action');
+colModelT_pControl.push({name:'act',index:'act', editable: false, hidden:false, width: 80, align:'center'});
+
+var lastsel; var jdesc1;
+var lRow; var lCol; var i = 0;
+var loadView_pControl = function(){
+jGrid_pControl = jQuery("#list_pControl").jqGrid({
+     url:url+'syst_c_usergroup/search_ugRole/',
+     mtype : "POST", datatype: "json",
+     colNames: colNamesT_pControl , colModel: colModelT_pControl ,
+     rownumbers:true, viewrecords: true, multiselect: false, 
+     caption: "User Group List", rowNum:20, rowList:[10,20,30], multiple:true,
+     height: 300, width: 950, cellEdit: true, cellsubmit: 'clientArray', forceFit : true,
+     loadComplete: function(){ 	 
+                var ids = jQuery("#list_pControl").getDataIDs(); 
+                for(var i=0;i<ids.length;i++) { 
+                    var cl = ids[i];
+                    ce = "<a href='#' onclick=\"viewPControl('"+cl+"');\"/ style='cursor:pointer'>Open/Close</a>";
+                    jQuery("#list_pControl").setRowData(ids[i],{act:ce}) 
+                }
+            }, imgpath: gridimgpath, pager: jQuery('#pager_pControl'), sortname: colModelT_pControl[0].name
+	  });
+	  jGrid_pControl.navGrid('#pager_pControl',{edit:false,add:false,del:false, search: false, refresh: true});
+	  
+}
+jQuery("#list_pControl").ready(loadView_pControl);
+
+
+</script>
+
+<div style="min-height:500px;">
+
+    <div id="tabs" style="width:95%; height:500px;">
+        <ul>
+            <li><a href="#tabs-1">Closing Period</a></li>
+            <li><a href="#tabs-2">Period Control</a></li>
+        </ul>
+        <div id="tabs-1">
+        	<p><?php if(isset($company)){ echo "Perusahaan : " . $company; }?> <span style="padding-left:15px;">&nbsp;</span> 
+            Periode : <?php if(isset($speriode)){ echo $speriode; }?></p>
+            <p> 
+                <div id="period">
+                   <table id="list_period" class="scroll" style="margin-top:0px;" cellpadding="0" cellspacing="0"></table>
+                   <div id="pager_period" class="scroll"></div>
+                </div>
+            </p>
+        </div>
+        <div id="tabs-2">
+            <p>           
+                <div id="pControl"></div>	
+                   <table id="list_pControl" class="scroll" style="margin-top:0px;" cellpadding="0" cellspacing="0"></table>
+                   <div id="pager_pControl" class="scroll"></div> 
+                </div>
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<div id="inputPeriod" style="padding-top:15px; margin-left:-10px;">
+<table cellpadding="0" cellspacing="1" border="0" width="100%" class="teks_">
+    <tr><td>ID Period</td><td>:</td><td><input class="input" type="text" size=25 id="i_periodid" /></td></tr>
+    <tr><td>Period Name</td><td>:</td><td><input class="input"  type="text" size=25 id="i_periodname" /></td></tr>
+    <tr><td>Start</td><td>:</td><td><input class="input"  type="text" size=25 id="i_start" /></td></tr>
+    <tr><td>End</td><td>:</td><td><input class="input"  type="text" size=25 id="i_end" /></td></tr>
+    <tr><td>Is Closed</td><td>:</td><td><input type="checkbox" id="i_isClose" name="i_isClose" class="input" tabindex="3" maxlength="50"/></td></tr>
+    <tr><td>Closed By</td><td>:</td><td><input class="input"  type="text" size=25 id="i_closeBy" /></td></tr>
+    <tr><td>Closed Date</td><td>:</td><td><input class="input"  type="text" size=25 id="i_closeDate" /></td></tr>
+    <tr><td>Reopen By</td><td>:</td><td><input class="input"  type="text" size=25 id="i_reopenBy" /></td></tr>
+    <tr><td>Reopen Date</td><td>:</td><td><input class="input"  type="text" size=25 id="i_reopenDate" /></td></tr>
+</table>
+</div>
+
+<div id="inputPControl">
+<table cellpadding="0" cellspacing="1" border="0" width="100%" class="teks_">
+	<tr><td>ID Period Control</td><td>:</td><td><input class="input" type="text" size=25 id="i_pControlid" /></td></tr>
+    <tr><td>ID Period</td><td>:</td><td><input class="input" type="text" size=25 id="i_pControl" /></td></tr>
+    <tr><td>Period Name</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlname" /></td></tr>
+    <tr><td>Start</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlStart" /></td></tr>
+    <tr><td>End</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlEnd" /></td></tr>
+    <tr><td>Module</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlModule" /></td></tr>
+    <tr><td>Is Closed</td><td>:</td><td><input type="checkbox" id="i_pControlIsClose" name="i_pControlIsClose" class="input" tabindex="3" maxlength="50"/></td></tr>
+    <tr><td>Closed By</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlCloseBy" /></td></tr>
+    <tr><td>Closed Date</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlCloseDate" /></td></tr>
+    <tr><td>Reopen By</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlReopenBy" /></td></tr>
+    <tr><td>Reopen Date</td><td>:</td><td><input class="input"  type="text" size=25 id="i_pControlReopenDate" /></td></tr>
+</table>
+</div>
